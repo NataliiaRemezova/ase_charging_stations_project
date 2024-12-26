@@ -6,7 +6,7 @@ Description:
     src/charging_station_rating/charging_station_rating_service.py.
 
 Usage:
-    It is run with pytest
+    It is run with all the other tests in this repo by running 'pytest' in the terminal.
 
 Dependencies:
     pytest
@@ -20,3 +20,11 @@ Date:
 Version:
     Version 0.1
 """
+from charging_station_rating import Rating
+from charging_station import ChargingStation
+import pytest
+
+
+def test_create_charging_station_rating():
+  charging_station = ChargingStation()
+  assert(ChargingStation.rating) == []
