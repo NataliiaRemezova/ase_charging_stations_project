@@ -3,7 +3,7 @@ from datetime import datetime, time
 
 class StationSearchService:
     def __init__(self, repository: StationRepository):
-        self. repository = repository
+        self.repository = repository
         
     def search_by_postal_code(self, code: str) -> SearchResult:
         postal_code = PostalCode(code)
