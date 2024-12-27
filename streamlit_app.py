@@ -3,9 +3,7 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 from shapely.geometry import shape
-import folium
 from collections import defaultdict
-from folium.plugins import HeatMap
 from core import methods as m1
 from core import HelperTools as ht
 from config import pdict
@@ -17,7 +15,25 @@ df_geodat_plz = pd.read_csv('datasets/geodata_berlin_plz.csv', sep=';')  # Geosp
 df_lstat = pd.read_excel('datasets/Ladesaeulenregister_SEP.xlsx', header=10)
 df_residents = pd.read_csv('datasets/plz_einwohner.csv')  # Residents data
 
+# Clean the latitude and longitude columns to remove commas and convert to numeric
+df_lstat['Breitengrad'] = pd.to_numeric(df_lstat['Breitengrad'].str.replace(',', '.'), errors='coerce')
+df_lstat['Längengrad'] = pd.to_numeric(df_lstat['Längengrad'].str.replace(',', '.'), errors='coerce')
 
+# Initialize session state if not already done
+if "postal_code" not in st.session_state:
+    st.session_state.postal_code = ""
+if "map" not in st.session_state:
+    st.session_state.map = None  # Initialize an empty map state
+if "filtered_stations" not in st.session_state:
+    st.session_state.filtered_stations = pd.DataFrame()  # Initialize empty DataFrame
+if "locations" not in st.session_state:
+    st.session_state.locations = []
+if "user_feedback" not in st.session_state:
+    st.session_state.user_feedback = defaultdict(list)
+if "total_ratings" not in st.session_state:
+    st.session_state.total_ratings = defaultdict(list)
+if "ratings" not in st.session_state:
+    st.session_state.ratings = {}
 
 # Data preprocessing
 def preprocess_data():
@@ -28,26 +44,26 @@ def preprocess_data():
 
 df_geodat_plz, df_lstat = preprocess_data()
 
+
+# Function to display star ratings after marker click
+def display_star_rating(station_name):
+    """ Displays a star-based rating system for a station. """
+    rating = st.radio("Rate the station:", options=[1, 2, 3, 4, 5], format_func=lambda x: "⭐" * x)
+    if st.button(f"Submit Rating for {station_name}"):
+        if station_name in st.session_state.ratings:
+            st.session_state.ratings[station_name].append(rating)
+        else:
+            st.session_state.ratings[station_name] = [rating]
+        st.success(f"Rating {rating} stars submitted for {station_name}!")
+
+
 # Set page config
 st.set_page_config(page_title="ChargeHub Berlin 🌩", layout="wide")
-
-# Initialize session state
-if "locations" not in st.session_state:
-    st.session_state.locations = []
-
-if "postal_code" not in st.session_state:
-    st.session_state.postal_code = "10117"
-
-if "user_feedback" not in st.session_state:
-    st.session_state.user_feedback = defaultdict(list)
-
-if "total_ratings" not in st.session_state:
-    st.session_state.total_ratings = defaultdict(list)
 
 # Sidebar navigation
 st.sidebar.title("Ansicht wählen")
 aview = st.sidebar.radio(
-    "", ["Home", "Heatmaps", "Bezirke", "Postleitzahlen", "Details", "Charging Station Management", "My Account", "Registration"]
+    "", ["Home", "Heatmaps", "Postleitzahlen", "Details", "My Account", "Registration"]
 )
 
 # Main header
@@ -105,38 +121,71 @@ elif aview == "Heatmaps":
 elif aview == "Postleitzahlen":
     st.subheader("Ladestationen nach Postleitzahl suchen")
 
+    # Input for postal code
     postal_code = st.text_input("Postleitzahl eingeben", st.session_state.postal_code)
+
+    # When the "Suchen" button is clicked
     if st.button("Suchen"):
         st.session_state.postal_code = postal_code
-        st.session_state.locations = [
-            (52.5206, 13.4098, "Normallader"),
-            (52.5155, 13.3777, "Schnelllader"),
-            (52.5246, 13.4285, "Normallader"),
-        ]
 
-    if st.session_state.locations:
-        latitudes = [loc[0] for loc in st.session_state.locations]
-        longitudes = [loc[1] for loc in st.session_state.locations]
-        center_lat = sum(latitudes) / len(latitudes)
-        center_lon = sum(longitudes) / len(longitudes)
+        # Filter stations based on the postal code (make sure to use the correct column name 'Postleitzahl')
+        filtered_stations = df_lstat[df_lstat['Postleitzahl'].astype(str) == st.session_state.postal_code]
 
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=13)
+        # Store filtered stations in session state
+        st.session_state.filtered_stations = filtered_stations
 
-        for lat, lon, label in st.session_state.locations:
-            folium.Marker(
-                location=[lat, lon], 
-                popup=folium.Popup(label, parse_html=True), 
-                tooltip=label
-            ).add_to(m)
+        # Check if any stations match the postal code
+        if not filtered_stations.empty:
+            # Remove rows where latitude or longitude is NaN
+            filtered_stations = filtered_stations.dropna(subset=['Breitengrad', 'Längengrad'])
 
-        st_folium(m, width=800, height=500)
+            # Ensure there are valid coordinates after dropping NaN values
+            if filtered_stations.empty:
+                st.write("Keine gültigen Koordinaten für diese Postleitzahl gefunden.")
+            else:
+                latitudes = filtered_stations['Breitengrad']
+                longitudes = filtered_stations['Längengrad']
+                center_lat = latitudes.mean()
+                center_lon = longitudes.mean()
 
-        st.markdown("**Gefundene Ladestationen: 54**")
-        st.markdown("- **Normallader (≤ 22 kW):** 44")
-        st.markdown("- **Schnelllader (22-43 kW):** 10")
-        st.markdown("- **Alle Ladestationen anzeigen:** [hier klicken](#)")
-    else:
-        st.write("Keine Ergebnisse verfügbar. Bitte suchen Sie erneut.")
+                # Create the folium map centered around the average location of the filtered stations
+                m = folium.Map(location=[center_lat, center_lon], zoom_start=13)
+
+                # Add markers for each station with a click event to rate the station
+                for _, row in filtered_stations.iterrows():
+                    station_name = row.get('Anzeigename (Karte)', 'Unbekannt')  # Default to 'Unbekannt' if empty
+                    marker = folium.Marker(
+                        location=[row['Breitengrad'], row['Längengrad']], 
+                        popup=folium.Popup(f"<strong>{station_name}</strong><br>Click to rate this station!", parse_html=True),
+                        tooltip=station_name
+                    )
+
+                    # Attach a click event to the marker to enable rating
+                    marker.add_to(m)
+
+                # Store the map in session state so it persists across reruns
+                st.session_state.map = m
+
+        else:
+            # No stations found for this postal code
+            st.write("Keine Ladestationen für diese Postleitzahl gefunden.")
+
+    # If the map is already stored in session state, render it
+    if st.session_state.map:
+        # Display the map
+        st_folium(st.session_state.map, width=800, height=500)
+
+        # Show the number of found stations
+        filtered_stations = st.session_state.filtered_stations
+        st.markdown(f"**Gefundene Ladestationen:** {len(filtered_stations)}")
+        st.markdown(f"- **Normallader (≤ 22 kW):** {filtered_stations[filtered_stations['Nennleistung Ladeeinrichtung [kW]'] <= 22].shape[0]}")
+        st.markdown(f"- **Schnelllader (22-43 kW):** {filtered_stations[(filtered_stations['Nennleistung Ladeeinrichtung [kW]'] > 22) & (filtered_stations['Nennleistung Ladeeinrichtung [kW]'] <= 43)].shape[0]}")
+        st.markdown(f"- **Alle Ladestationen anzeigen:** [hier klicken](#)")
+
+        # Add a form to rate the station when clicked
+        station_name = st.text_input("Geben Sie den Namen der Station ein, um zu bewerten:")
+        if station_name:
+            display_star_rating(station_name)
 
 elif aview == "Details":
     st.subheader("Details der Ladestationen")
@@ -153,25 +202,6 @@ elif aview == "Details":
         st.markdown("**Letzte Abzeichen**")
         st.write("- Power User")
         st.write("- +150 Punkte verdient")
-
-elif aview == "Bezirke":
-    st.subheader("Ladestationen nach Bezirken")
-    st.write("Kartenansicht nach Bezirken")
-
-elif aview == "Charging Station Management":
-    st.subheader("Charging Station Management")
-
-    st.write("### Storing Data About Charging Station")
-    station = st.text_input("Enter station name:")
-    rating = st.slider("Rate the station (1-5):", 1, 5, 3)
-    if st.button("Submit Rating"):
-        st.session_state.total_ratings[station].append(rating)
-        st.success(f"Rating for {station} submitted!")
-
-    st.write("### Display Ratings")
-    for station, ratings in st.session_state.total_ratings.items():
-        avg_rating = sum(ratings) / len(ratings)
-        st.write(f"{station}: Average Rating = {avg_rating:.2f} ({len(ratings)} ratings)")
 
 elif aview == "My Account":
     st.subheader("My Account")
