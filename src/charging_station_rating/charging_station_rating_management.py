@@ -1,7 +1,7 @@
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from typing import List, Optional, ClassVar
-from charging_station_rating_service import RatingService
+from charging_station_rating.charging_station_rating_service import RatingService
 
 @dataclass(frozen=True)
 class Rating:
@@ -41,9 +41,16 @@ class RatingManagement:
         
         # check if user autheticated via userSession?
 
-        result = self.ratingService.create_rating(rating)
+        rating_data = {
+            "rating_value": rating_value,
+            "comment": comment,
+            "user_id": user_id,
+            "station_id": station_id
+        }
+        result = self.ratingService.create_rating(rating_data)
+        resultEvent = RatingCreated(**result)
 
-        return result
+        return resultEvent
 
 
 # Custom exceptions

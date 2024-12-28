@@ -2,7 +2,7 @@
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from enum import Enum 
-from typing import List, Optional
+from typing import List, Optional, field
 
 # Value Objects
 @dataclass (frozen=True)
@@ -17,7 +17,7 @@ class PostalCode:
     
     def _is_valid_berlin_postal_code(self) -> bool:
         return (self.value.startswith(("10", "12", "13"))
-            and len (self.value) == 5)
+            and len(self.value) == 5)
 
 class StationStatus (Enum) :
     AVAILABLE = "available"
@@ -44,3 +44,6 @@ class ChargingStation:
 class StationsAvailabilityRequested:
     postal_code: PostalCode 
     timestamp: datetime
+
+class InvalidPostalCodeException(Exception):
+    pass

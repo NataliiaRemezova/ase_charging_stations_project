@@ -25,8 +25,9 @@ import pytest
 from dataclasses import dataclass 
 from datetime import datetime 
 from typing import List, Optional
-from charging_station import PostalCode
-from charging_station_search import ChargingStationSearchService, InvalidPostalCodeException
+from charging_station.charging_station_management import PostalCode
+from charging_station_search.charging_station_search_management import InvalidPostalCodeException
+from charging_station_search.charging_station_search_service import ChargingStationSearchService
 
 def test_berlin_postal_code_validation():
 # Arrange & Act & Assert

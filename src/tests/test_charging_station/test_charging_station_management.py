@@ -37,7 +37,7 @@ def test_get_stations_availability():
     assert all(station.postal_code.value == postal_code 
                for station in result.stations)
 
-def test_get_stations_peak_times ():
+def test_get_stations_peak_times():
     # Arrange
     station_id = "123"
     service = StationAvailabilityService(MockStationRepository())
