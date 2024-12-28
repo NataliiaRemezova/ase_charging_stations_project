@@ -5,6 +5,12 @@ load_dotenv()
 
 MONGO_URL = os.getenv("MONGO_URL")
 
+DATA_PATHS = {
+    'geodata_berlin_plz': '../datasets/geodata_berlin_plz.csv',
+    'ladesaeulenregister': '../datasets/Ladesaeulenregister_SEP.xlsx',
+    'plz_einwohner': '../datasets/plz_einwohner.csv'
+}
+
 p                           = dict()
 p['picklefolder']           = 'pickles'
 # -----------------------------------

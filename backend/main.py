@@ -5,14 +5,26 @@ import streamlit as st
 from core import methods as m1
 from core import HelperTools as ht
 from config import pdict
+from config import DATA_PATHS
 
 @ht.timer
 def main():
     """Main: Generation of Streamlit App for visualizing electric charging stations & residents in Berlin"""
     # Load data
-    df_geodat_plz = pd.read_csv('datasets/geodata_berlin_plz.csv', sep=';')
-    df_lstat = pd.read_excel('datasets/Ladesaeulenregister_SEP.xlsx', header=10)
-    df_residents = pd.read_csv('datasets/plz_einwohner.csv')
+    # df_geodat_plz = pd.read_csv('../datasets/geodata_berlin_plz.csv', sep=';')
+    # df_lstat = pd.read_excel('../datasets/Ladesaeulenregister_SEP.xlsx', header=10)
+        # df_residents = pd.read_csv('../datasets/plz_einwohner.csv')
+    try:
+        df_geodat_plz = pd.read_csv(DATA_PATHS['geodata_berlin_plz'], sep=';')
+        df_lstat = pd.read_excel(DATA_PATHS['ladesaeulenregister'], header=10)
+        df_residents = pd.read_csv(DATA_PATHS['plz_einwohner'])
+    except FileNotFoundError as e:
+        st.error(f"File not found: {e.filename}")
+        raise
+    except pd.errors.EmptyDataError as e:
+        st.error("Data file is empty or malformed.")
+        raise
+
 
     # Data Quality Checks
     quality_issues_lstat = ht.check_data_quality(df_lstat, ['Postleitzahl', 'Bundesland', 'Breitengrad', 'Längengrad', 'Nennleistung Ladeeinrichtung [kW]'],
