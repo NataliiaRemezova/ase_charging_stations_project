@@ -8,9 +8,9 @@ API_BASE_URL = "http://localhost:8000/api"
 # Load datasets
 @st.cache_data
 def load_data():
-    df_geodat_plz = pd.read_csv('datasets/geodata_berlin_plz.csv', sep=';')
-    df_lstat = pd.read_excel('datasets/Ladesaeulenregister_SEP.xlsx', header=10)
-    df_residents = pd.read_csv('datasets/plz_einwohner.csv')
+    df_geodat_plz = pd.read_csv('../datasets/geodata_berlin_plz.csv', sep=';')
+    df_lstat = pd.read_excel('../datasets/Ladesaeulenregister_SEP.xlsx', header=10)
+    df_residents = pd.read_csv('../datasets/plz_einwohner.csv')
     
     df_lstat['Breitengrad'] = pd.to_numeric(df_lstat['Breitengrad'].str.replace(',', '.'), errors='coerce')
     df_lstat['Längengrad'] = pd.to_numeric(df_lstat['Längengrad'].str.replace(',', '.'), errors='coerce')
