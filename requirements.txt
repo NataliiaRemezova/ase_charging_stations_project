@@ -13,5 +13,7 @@ Folium
 openpyxl
 FastAPI
 pytest==8.3.4
+pytest-mock
+email-validator
 #install local packages which are recognizable by the __init__.py file
 -e . 
