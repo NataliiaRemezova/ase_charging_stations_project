@@ -20,7 +20,7 @@ elif aview == "Heatmaps":
 elif aview == "Postal Code Search":
     display_postal_code(df_lstat)
 elif aview == "Details":
-    display_details()
+    display_details(df_lstat)
 elif aview == "My Account":
     display_account()
 elif aview == "Registration":
