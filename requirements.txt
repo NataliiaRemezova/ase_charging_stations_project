@@ -19,5 +19,6 @@ fastapi
 uvicorn
 requests
 dotenv
+st_star_rating
 #install local packages which are recognizable by the __init__.py file
 -e . 
