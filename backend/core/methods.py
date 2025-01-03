@@ -11,21 +11,14 @@ from branca.colormap import LinearColormap
 
 
 def sort_by_plz_add_geometry(dfr, dfg, pdict): 
-    dframe                  = dfr.copy()
-    df_geo                  = dfg.copy()
+    """
+    Sorts by postal code (PLZ) and adds geometry data.
+    """
+    dframe = dfr.copy().sort_values(by='PLZ').reset_index(drop=True)
+    sorted_df2 = dframe.merge(dfg, on=pdict["geocode"], how='left').dropna(subset=['geometry'])
+    sorted_df2['geometry'] = gpd.GeoSeries.from_wkt(sorted_df2['geometry'])
     
-    sorted_df               = dframe\
-        .sort_values(by='PLZ')\
-        .reset_index(drop=True)\
-        .sort_index()
-        
-    sorted_df2              = sorted_df.merge(df_geo, on=pdict["geocode"], how ='left')
-    sorted_df3              = sorted_df2.dropna(subset=['geometry'])
-    
-    sorted_df3['geometry']  = gpd.GeoSeries.from_wkt(sorted_df3['geometry'])
-    ret                     = gpd.GeoDataFrame(sorted_df3, geometry='geometry')
-    
-    return ret
+    return gpd.GeoDataFrame(sorted_df2, geometry='geometry')
 
 # -----------------------------------------------------------------------------
 @ht.timer

@@ -6,6 +6,14 @@ from core import methods as m1
 from core import HelperTools as ht
 from config import pdict
 from config import DATA_PATHS
+from fastapi import FastAPI
+from src.user_profile.user_profile_service import router as auth_router
+
+app = FastAPI()
+
+# Include Authentication Routes
+app.include_router(auth_router)
+
 
 @ht.timer
 def main():

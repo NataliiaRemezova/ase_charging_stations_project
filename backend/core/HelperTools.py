@@ -9,19 +9,22 @@ import random
 from collections import Counter, OrderedDict
 
 #------------------------------------------------------------------------------
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def timer(func):
     """Print the runtime of the decorated function"""
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
-        start_time = time.perf_counter()  # 1
+        start_time = time.perf_counter()
         value = func(*args, **kwargs)
-        end_time = time.perf_counter()  # 2
-        run_time = end_time - start_time  # 3
-        print(" ====> Duration {:.2f} secs: {}".format(run_time, func.__doc__))
+        end_time = time.perf_counter()
+        run_time = end_time - start_time
+        logger.info(f"Duration {run_time:.2f} secs: {func.__doc__}")
         return value
-
-    return wrapper_timer #  no "()" here, we need the object to be returned.
+    return wrapper_timer
 
 #------------------------------------------------------------------------------
 # predicates
