@@ -13,5 +13,12 @@ Folium
 openpyxl
 FastAPI
 pytest==8.3.4
+pymongo
+motor
+fastapi
+uvicorn
+requests
+dotenv
+st_star_rating
 #install local packages which are recognizable by the __init__.py file
 -e . 
