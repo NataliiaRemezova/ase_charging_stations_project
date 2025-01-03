@@ -26,12 +26,13 @@ def initialize_session_state():
         "user_feedback": defaultdict(list),
         "total_ratings": defaultdict(list),
         "ratings": {},
-        "user_info": None
+        "user_info": None,
+        "users": []  # Simulate a simple mock list of users in session state for testing
     }
     for key, value in default_states.items():
         if key not in st.session_state:
             st.session_state[key] = value
-
+            
 # API helpers
 def api_get(endpoint):
     try:
