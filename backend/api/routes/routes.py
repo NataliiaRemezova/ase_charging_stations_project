@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from db import station_collection
-from api.schemas import StationSchema
+from backend.api.schemas.schemas import StationSchema
 from bson.objectid import ObjectId
 
 router = APIRouter()
