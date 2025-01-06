@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import initialize_session_state, fetch_data_from_api
+from utils import load_data, initialize_session_state
 from home import display_home
 from heatmaps import display_heatmaps
 from postal_code import display_postal_code
@@ -7,13 +7,15 @@ from details import display_details
 from account import display_account
 from registration import display_registration
 
-
 # Initialize session state variables
 initialize_session_state()
 
-# Load Data from Backend API
+# Load data directly (not through FastAPI)
 if 'df_geodat_plz' not in st.session_state or st.session_state.df_geodat_plz.empty:
-    st.session_state.df_geodat_plz, st.session_state.df_lstat, st.session_state.df_residents = fetch_data_from_api()
+    df_geodat_plz, df_lstat, df_residents = load_data()
+    st.session_state.df_geodat_plz = df_geodat_plz
+    st.session_state.df_lstat = df_lstat
+    st.session_state.df_residents = df_residents
 
 # Sidebar Navigation
 aview = st.sidebar.radio(
