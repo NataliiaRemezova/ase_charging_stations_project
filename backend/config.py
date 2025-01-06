@@ -5,10 +5,13 @@ load_dotenv()
 
 MONGO_URL = os.getenv("MONGO_URL")
 
+SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
 DATA_PATHS = {
-    'geodata_berlin_plz': '../datasets/geodata_berlin_plz.csv',
-    'ladesaeulenregister': '../datasets/Ladesaeulenregister_SEP.xlsx',
-    'plz_einwohner': '../datasets/plz_einwohner.csv'
+    'geodata_berlin_plz': 'datasets/geodata_berlin_plz.csv',
+    'ladesaeulenregister': 'datasets/Ladesaeulenregister_SEP.xlsx',
+    'plz_einwohner': 'datasets/plz_einwohner.csv'
 }
 
 p                           = dict()

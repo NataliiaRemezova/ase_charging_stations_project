@@ -27,6 +27,9 @@ def preprop_lstat(dfr, dfg, pdict):
     dframe = dfr.copy()
     df_geo = dfg.copy()
 
+    # Ensure all column names are strings
+    dframe.columns = dframe.columns.astype(str)
+
     # Print initial columns
     print("Initial columns in dframe:", dframe.columns)
 

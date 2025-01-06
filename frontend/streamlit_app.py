@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import load_data, initialize_session_state
+from utils import initialize_session_state, fetch_data_from_api
 from home import display_home
 from heatmaps import display_heatmaps
 from postal_code import display_postal_code
@@ -8,19 +8,32 @@ from account import display_account
 from registration import display_registration
 
 
+# Initialize session state variables
 initialize_session_state()
-df_geodat_plz, df_lstat, df_residents = load_data()
 
-aview = st.sidebar.radio("", ["Home", "Heatmaps", "Postal Code Search", "Details", "My Account", "Registration"])
+# Load Data from Backend API
+if 'df_geodat_plz' not in st.session_state or st.session_state.df_geodat_plz.empty:
+    st.session_state.df_geodat_plz, st.session_state.df_lstat, st.session_state.df_residents = fetch_data_from_api()
 
+# Sidebar Navigation
+aview = st.sidebar.radio(
+    "Navigation", 
+    ["Home", "Heatmaps", "Postal Code Search", "Details", "My Account", "Registration"]
+)
+
+# Navigation Logic
 if aview == "Home":
     display_home()
 elif aview == "Heatmaps":
-    display_heatmaps(df_lstat, df_geodat_plz, df_residents)
+    display_heatmaps(
+        st.session_state.df_lstat, 
+        st.session_state.df_geodat_plz, 
+        st.session_state.df_residents
+    )
 elif aview == "Postal Code Search":
-    display_postal_code(df_lstat)
+    display_postal_code(st.session_state.df_lstat)
 elif aview == "Details":
-    display_details(df_lstat)
+    display_details(st.session_state.df_lstat)
 elif aview == "My Account":
     display_account()
 elif aview == "Registration":

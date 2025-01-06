@@ -1,69 +1,85 @@
 import streamlit as st
 import requests
 from utils import API_BASE_URL
-import datetime
-#from pymongo import MongoClient
-#from bcrypt import hashpw, gensalt, checkpw
 
-# MongoDB connection
-#client = MongoClient("mongodb://localhost:27017")  
-#db = client['chargehub']  
-#users_collection = db['users'] 
 
 def display_registration():
     st.title("Welcome to ChargeHub Berlin 🌩")
 
     if 'user_info' not in st.session_state:
-        st.session_state.user_info = []
+        st.session_state.user_info = None
 
-    def sign_up(username, email, password):
-        # Commenting out database interaction
-        # if users_collection.find_one({"email": email}):
-        #     st.warning('Email already exists!')
-        # else:
-        # Hash the password before storing it (simulated)
-        user = {
-            "username": username,
-            "email": email,
-            "password": password,  # Store password directly (for simplicity in this mock version)
-            "date_joined": str(datetime.datetime.now())
-        }
-        # Simulate storing user in session state instead of database
-        st.session_state.users.append(user)
-        st.success('Account created successfully!')
-        st.balloons()
+    def login(email, password):
+        try:
+            response = requests.post(
+                f"{API_BASE_URL}/auth/token",
+                data={"username": email, "password": password}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                token = data.get("access_token")
+                if token:
+                    # Store token and user info in session state
+                    st.session_state.user_info = {
+                        "token": token,
+                        "username": email
+                    }
+                    st.success("Logged in successfully!")
 
-    def log_in(email, password):
-        # Simulate login by checking the user data in session state
-        user = next((u for u in st.session_state.users if u['email'] == email), None)
-        if user and user['password'] == password:
-            st.session_state.user_info = {"username": user['username'], "email": user['email']}
-            st.success('Logged in successfully!')
-        else:
-            st.warning('Invalid email or password')
+                    # Fetch user profile to confirm
+                    headers = {"Authorization": f"Bearer {token}"}
+                    profile_response = requests.get(
+                        f"{API_BASE_URL}/auth/users/me", headers=headers
+                    )
+                    if profile_response.status_code == 200:
+                        user_data = profile_response.json()
+                        st.session_state.user_info["username"] = user_data.get("username")
+                        st.session_state.user_info["email"] = user_data.get("email")
+                        st.success(f"Welcome, {user_data.get('username')}!")
+                    else:
+                        st.error("Failed to fetch user profile after login.")
+                else:
+                    st.error("Token not received. Please try again.")
+            else:
+                st.error(f"Failed to log in: {response.json().get('detail')}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Request failed: {e}")
+
+    def register(username, email, password):
+        try:
+            response = requests.post(
+                f"{API_BASE_URL}/auth/register",
+                json={"username": username, "email": email, "password": password}
+            )
+            if response.status_code == 200:
+                st.success("Account created successfully! Please log in.")
+            else:
+                st.error(f"Registration failed: {response.json().get('detail', 'Unknown error')}")
+        except requests.exceptions.RequestException as e:
+            st.error(f"Request failed: {e}")
 
     if st.session_state.user_info:
         st.subheader(f"Welcome, {st.session_state.user_info['username']}!")
-        st.text(f"Email: {st.session_state.user_info['email']}")
+        st.text(f"Email: {st.session_state.user_info.get('email', 'Not available')}")
 
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.rerun()  # Reload the page after logout
+            st.rerun()
     else:
         tab1, tab2 = st.tabs(["Log In", "Sign Up"])
 
         with tab1:
             st.subheader("Log In")
-            email = st.text_input("Email", key="login_email")  # Add a unique key
-            password = st.text_input("Password", type="password", key="login_password")  # Add a unique key
+            email = st.text_input("Email", key="login_email")
+            password = st.text_input("Password", type="password", key="login_password")
             if st.button("Log In"):
-                log_in(email, password)
+                login(email, password)
 
         with tab2:
             st.subheader("Sign Up")
-            username = st.text_input("Username", key="signup_username")  # Add a unique key
-            email = st.text_input("Email", key="signup_email")  # Add a unique key
-            password = st.text_input("Password", type="password", key="signup_password")  # Add a unique key
+            username = st.text_input("Username", key="signup_username")
+            email = st.text_input("Email", key="signup_email")
+            password = st.text_input("Password", type="password", key="signup_password")
             if st.button("Sign Up"):
-                sign_up(username, email, password)
+                register(username, email, password)

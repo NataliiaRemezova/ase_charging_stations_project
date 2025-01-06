@@ -1,29 +1,49 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
-
-from .auth import authenticate_user, create_access_token, get_current_active_user
-from .models import Token, UserLogin, User
+from .auth import create_access_token, authenticate_user, get_current_user
+from .user_profile_repositories import UserRepository
+from backend.db.mongo_client import user_collection
+from .user_models import RegisterRequest, Token
 
 router = APIRouter()
+repo = UserRepository(user_collection)
 
-# Dependency Injection
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Token Route
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: UserLogin):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+async def login_user(
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    user = await authenticate_user(username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid credentials",
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+    access_token_expires = timedelta(minutes=30)
+    access_token = await create_access_token(
+        data={"sub": str(user["_id"])},  # Ensure _id is stringified
+        expires_delta=access_token_expires
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Protected Route
-@router.get("/users/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    return current_user
+@router.post("/register")
+async def register_user(register: RegisterRequest):
+    """
+    Register a new user
+    """
+    user = await repo.get_user_by_email(register.email)
+    if user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    await repo.create_user(register.username, register.email, register.password)
+    return {"message": "User registered successfully"}
+
+
+@router.get("/users/me")
+async def get_user_profile(current_user=Depends(get_current_user)):
+    """
+    Retrieve current user profile
+    """
+    return {
+        "username": current_user["username"],
+        "email": current_user["email"]
+    }
