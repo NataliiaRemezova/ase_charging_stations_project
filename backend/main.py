@@ -49,3 +49,44 @@ async def get_processed_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/stations/search/{postal_code}", tags=["Stations"])
+async def search_stations(postal_code: str):
+    """
+    Search for charging stations by postal code.
+    """
+    from backend.src.charging_station_search.charging_station_search_service import StationSearchService
+    from backend.src.charging_station_search.charging_station_search_management import StationRepository
+
+    service = StationSearchService(repository=StationRepository())
+    result = service.search_by_postal_code(postal_code)
+    
+    return {
+        "stations": [station.__dict__ for station in result.stations],
+        "stations_found": result.event.stations_found,
+        "timestamp": result.event.timestamp.isoformat()
+    }
+
+@app.post("/stations/{station_id}/rate", tags=["Stations"])
+async def rate_station(
+    station_id: str,
+    rating_value: int,
+    comment: str,
+    current_user=Depends(get_current_user)
+):
+    """
+    Rate a charging station.
+    """
+    from backend.src.charging_station_rating.charging_station_rating_management import RatingManagement
+
+    management = RatingManagement()
+    result = management.handle_create_rating(
+        userSession=current_user,
+        user_id=str(current_user["_id"]),
+        station_id=station_id,
+        rating_value=rating_value,
+        comment=comment
+    )
+    if not result:
+        raise HTTPException(status_code=400, detail="Invalid rating or comment")
+    return {"message": "Rating submitted successfully", "rating_id": result.station_id}
+
