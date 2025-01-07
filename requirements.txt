@@ -16,6 +16,7 @@ pytest==8.3.4
 pymongo
 motor
 fastapi
+fastapi[standard]
 uvicorn
 requests
 python-dotenv
