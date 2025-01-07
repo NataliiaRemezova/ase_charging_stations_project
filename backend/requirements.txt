@@ -1,0 +1,26 @@
+pandas
+geopandas
+shapely
+factor-analyzer
+scikit-learn
+matplotlib
+seaborn
+plotly
+dash
+streamlit
+streamlit_folium
+Folium
+openpyxl
+FastAPI
+pytest==8.3.4
+pymongo
+motor
+fastapi
+uvicorn
+requests
+python-dotenv
+st_star_rating
+passlib[bcrypt]
+python-jose[cryptography]
+# Install local packages which are recognizable by the __init__.py file
+-e .
