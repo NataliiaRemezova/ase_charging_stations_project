@@ -101,7 +101,6 @@ def display_home():
         df_lstat = st.session_state.df_lstat
         df_residents = st.session_state.df_residents
         
-    print(df_lstat.head())
 
     # Calculate metrics for Berlin
     total_stations, total_postal_codes, residents_served = calculate_metrics(df_lstat, df_residents)
