@@ -32,6 +32,9 @@ from charging_station_rating.charging_station_rating_management import (
 )
 from charging_station_rating.charging_station_rating_service import (
     RatingService,
+    RatingNotFoundException,
+    StationNotFoundException,
+    DoubleRatingException
 )
 
 @pytest.fixture
@@ -91,7 +94,7 @@ def test_handle_create_rating_failure_invalid_stars(rating_management):
             comment="Invalid stars",
         )
 
-def test_handle_create_rating_failure_invalid_stars(rating_management):
+def test_handle_create_rating_failure_invalid_comment(rating_management):
     """TC 2b: authenticated user creation of rating - failure - wrong length of comment."""
     # Test comment length outside valid range
     long_comment = "x" * 501  # 501 characters
@@ -187,7 +190,7 @@ def test_handle_update_rating_failure_invalid_stars(rating_management):
             comment="Invalid stars",
         )
 
-def test_handle_update_rating_failure_invalid_stars(rating_management):
+def test_handle_update_rating_failure_invalid_comment(rating_management):
     """TC 6b: authenticated user update of own rating - failure - comment too long."""
     # Test comment length outside valid range
     # the rating
@@ -280,22 +283,42 @@ def test_handle_view_rating_success(rating_management, mock_rating_service):
         station_id="station_bht",
     )
 
-# created by chatGPT from here, need to be checked and changed
+# not sure if this can happen, but should be checked if the exception is propagated correctly
+def test_handle_delete_rating_failure_nonexistent_rating(rating_management, mock_rating_service):
+    """TC 10: Update Rating - Rating Does Not Exist in the Database."""
+    mock_rating_service.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
+
+    rating = Rating(rating_value=5, 
+                    comment="What a wonderful experience.", 
+                    user_id="user_456", 
+                    station_id="station_bht")
+
+    with pytest.raises(RatingNotFoundException, match="Rating not found."):
+        rating_management.handle_update_rating(
+            userSession=userSession,
+            rating=rating,
+            rating_value=3,
+            comment="Shit."
+        )
 
 def test_handle_delete_rating_failure_nonexistent_rating(rating_management, mock_rating_service):
-    """TC 12: Delete Rating - Rating Does Not Exist."""
-    mock_rating_service.delete_rating.side_effect = ValueError("Rating not found.")
+    """TC 11: Delete Rating - Rating Does Not Exist in the Database."""
+    mock_rating_service.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
 
-    with pytest.raises(ValueError, match="Rating not found."):
+    rating = Rating(rating_value=5, 
+                    comment="What a wonderful experience.", 
+                    user_id="user_456", 
+                    station_id="station_bht")
+
+    with pytest.raises(RatingNotFoundException, match="Rating not found."):
         rating_management.handle_delete_rating(
             userSession=userSession,
-            user_id="user_456",
-            rating_id="nonexistent_rating",
+            rating=rating
         )
 
 def test_handle_view_rating_failure_station_not_found(rating_management, mock_rating_service):
-    """TC 13: View Ratings - Station Does Not Exist."""
-    mock_rating_service.view_ratings.side_effect = ValueError("Station not found.")
+    """TC 12: View Ratings - Station Does Not Exist."""
+    mock_rating_service.view_ratings.side_effect = StationNotFoundException("Station not found.")
 
     with pytest.raises(ValueError, match="Station not found."):
         rating_management.handle_view_ratings(
@@ -303,11 +326,27 @@ def test_handle_view_rating_failure_station_not_found(rating_management, mock_ra
             station_id="nonexistent_station",
         )
 
+def test_handle_view_rating_success_empty(rating_management, mock_rating_service):
+    """TC 13: authenticated user view rating - success - no ratings to display."""
+    # Stub the view_ratings method to return empty list
+    mock_rating_service.view_ratings.return_value = []
+
+    result = rating_management.handle_view_ratings(
+        userSession=userSession,
+        station_id="station_bht",
+    )
+
+    assert len(result) == 0
+    mock_rating_service.view_ratings.assert_called_once_with(
+        userSession=userSession,
+        station_id="station_bht",
+    )
+
 def test_handle_create_rating_failure_duplicate_rating(rating_management, mock_rating_service):
     """TC 14: Create Rating - Duplicate Rating."""
-    mock_rating_service.create_rating.side_effect = ValueError("Duplicate rating not allowed.")
+    mock_rating_service.create_rating.side_effect = DoubleRatingException("More than one rating for the same station are not allowed.")
 
-    with pytest.raises(ValueError, match="Duplicate rating not allowed."):
+    with pytest.raises(DoubleRatingException, match="More than one rating for the same station are not allowed."):
         rating_management.handle_create_rating(
             userSession=userSession,
             user_id="user_456",
@@ -316,30 +355,19 @@ def test_handle_create_rating_failure_duplicate_rating(rating_management, mock_r
             comment="Duplicate rating attempt",
         )
 
+# Not sure how to test the session expiry and where it should be checked (in management or service), 
+# now it is in service according to this test
 def test_handle_create_rating_failure_invalid_session(rating_management, mock_rating_service):
     """TC 15: Create Rating - Invalid Session."""
     mock_rating_service.create_rating.side_effect = PermissionError("Invalid user session.")
 
     with pytest.raises(PermissionError, match="Invalid user session."):
         rating_management.handle_create_rating(
-            userSession="invalid_session",
+            userSession=userSession,
             user_id="user_456",
             station_id="station_123",
             rating_value=3,
             comment="Invalid session test",
-        )
-
-def test_handle_update_rating_failure_deleted_rating(rating_management, mock_rating_service):
-    """TC 16: Update Rating - Rating Deleted."""
-    mock_rating_service.update_rating.side_effect = ValueError("Rating has been deleted.")
-
-    with pytest.raises(ValueError, match="Rating has been deleted."):
-        rating_management.handle_update_rating(
-            userSession=userSession,
-            user_id="user_456",
-            rating_id="deleted_rating",
-            rating_value=5,
-            comment="Attempting to update a deleted rating",
         )
 
 def test_handle_view_rating_failure_deleted_user(rating_management, mock_rating_service):
