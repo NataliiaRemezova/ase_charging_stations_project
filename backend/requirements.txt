@@ -13,12 +13,9 @@ Folium
 openpyxl
 FastAPI
 pytest==8.3.4
-pytest-mock
-email-validator
 pymongo
 motor
 fastapi
-fastapi[standard]
 uvicorn
 requests
 python-dotenv
