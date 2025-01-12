@@ -1,8 +1,8 @@
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from typing import List, Optional, ClassVar
-from charging_station_rating.charging_station_rating_service import RatingService
-
+from backend.src.charging_station_rating.charging_station_rating_service import RatingService
+from backend.src.charging_station.charging_station_management import PostalCode
 
 @dataclass 
 class ChargingStation:

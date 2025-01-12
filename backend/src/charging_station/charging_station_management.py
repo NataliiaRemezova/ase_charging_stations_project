@@ -1,8 +1,8 @@
-# Dann die Implementation (DDD):
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from enum import Enum 
-from typing import List, Optional, field
+from typing import List, Optional 
+from dataclasses import field
 
 # Value Objects
 @dataclass (frozen=True)

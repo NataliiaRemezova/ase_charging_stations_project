@@ -1,11 +1,22 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from backend.core import methods as m1
 from backend.config import pdict, DATA_PATHS
 from backend.src.user_profile.user_profile_service import router as auth_router
+from backend.src.user_profile.user_profile_repositories import UserRepository
 import pandas as pd
+from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository
+from backend.src.charging_station_rating.charging_station_rating_service import RatingRepository
+from backend.src.charging_station_rating.charging_station_rating_management import RatingManagement
+from backend.src.charging_station_search.charging_station_search_management import InvalidPostalCodeException
+from backend.db.mongo_client import user_collection
 
-# Initialize FastAPI
 app = FastAPI()
+
+# Initialize repositories
+user_repository = UserRepository(user_collection)
+station_repository = StationRepository()
+rating_repository = RatingRepository()
+rating_management = RatingManagement()
 
 # Include Authentication Routes
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -49,44 +60,58 @@ async def get_processed_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/stations/search/{postal_code}", tags=["Stations"])
+@app.get("/stations/search/{postal_code}", tags=["Charging Stations"])
 async def search_stations(postal_code: str):
     """
     Search for charging stations by postal code.
     """
-    from backend.src.charging_station_search.charging_station_search_service import StationSearchService
-    from backend.src.charging_station_search.charging_station_search_management import StationRepository
+    try:
+        service = StationSearchService(repository=station_repository)
+        result = await service.search_by_postal_code(postal_code) 
+        return {
+            "stations": [
+                {
+                    "id": station.id,
+                    "postal_code": station.postal_code.value,
+                    "availability_status": station.availability_status,
+                    "location": station.location,
+                }
+                for station in result.stations
+            ],
+            "stations_found": result.event.stations_found,
+            "timestamp": result.event.timestamp.isoformat(),
+        }
+    except InvalidPostalCodeException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
 
-    service = StationSearchService(repository=StationRepository())
-    result = service.search_by_postal_code(postal_code)
-    
-    return {
-        "stations": [station.__dict__ for station in result.stations],
-        "stations_found": result.event.stations_found,
-        "timestamp": result.event.timestamp.isoformat()
-    }
-
-@app.post("/stations/{station_id}/rate", tags=["Stations"])
-async def rate_station(
-    station_id: str,
-    rating_value: int,
-    comment: str,
-    current_user=Depends(get_current_user)
-):
+@app.post("/stations/{station_id}/rate", tags=["Charging Stations"])
+async def rate_station(station_id: str, rating_value: int, comment: str, current_user=Depends(user_repository.get_user_by_id)):
     """
     Rate a charging station.
     """
-    from backend.src.charging_station_rating.charging_station_rating_management import RatingManagement
+    try:
+        result = rating_management.handle_create_rating(
+            userSession=current_user,
+            user_id=str(current_user["_id"]),
+            station_id=station_id,
+            rating_value=rating_value,
+            comment=comment,
+        )
+        return {"message": "Rating submitted successfully", "rating_id": str(result.station_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    management = RatingManagement()
-    result = management.handle_create_rating(
-        userSession=current_user,
-        user_id=str(current_user["_id"]),
-        station_id=station_id,
-        rating_value=rating_value,
-        comment=comment
-    )
-    if not result:
-        raise HTTPException(status_code=400, detail="Invalid rating or comment")
-    return {"message": "Rating submitted successfully", "rating_id": result.station_id}
 
+@app.get("/stations/{station_id}/ratings", tags=["Charging Stations"])
+async def get_station_ratings(station_id: str):
+    """
+    Get ratings for a specific charging station.
+    """
+    try:
+        ratings = await rating_repository.get_ratings_by_station(station_id)
+        return ratings
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
