@@ -17,6 +17,7 @@ class StationRepository:
                     postal_code=PostalCode(station["postal_code"]),
                     availability_status=station["availability_status"],
                     location=f"{station['location']['latitude']}, {station['location']['longitude']}",
+                    name=station.get("name", "Unknown Name"),  # Include name field
                 )
                 for station in results
             ]

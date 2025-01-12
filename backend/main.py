@@ -75,6 +75,7 @@ async def search_stations(postal_code: str):
                     "postal_code": station.postal_code.value,
                     "availability_status": station.availability_status,
                     "location": station.location,
+                    "name": station.name,  # Include station name
                 }
                 for station in result.stations
             ],
