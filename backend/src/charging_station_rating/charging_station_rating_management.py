@@ -1,7 +1,7 @@
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from typing import List, Optional, ClassVar
-from backend.src.charging_station_rating.charging_station_rating_service import RatingService
+from backend.src.charging_station_rating.charging_station_rating_service import RatingService, RatingRepository
 
 @dataclass(frozen=True)
 class Rating:
@@ -25,33 +25,29 @@ class RatingCreated:
     timestamp: datetime
 
 class RatingManagement:
-    ratingService: ClassVar[RatingService] = RatingService()
+    def __init__(self):
+        self.ratingService = RatingService(repository=RatingRepository())
 
-    def handle_create_rating(self, userSession, user_id, station_id, rating_value, comment) -> RatingCreated:
+    async def handle_create_rating(self, userSession, user_id, station_id, rating_value, comment):
+        """
+        Handle creating a rating, performing validation, and saving.
+        """
         try:
-            rating = Rating(rating_value, comment, user_id, station_id)
-        except InvalidRatingException as e:
-            # Print error message if rating is invalid
-            print(str(e))
-            return False
-        except InvalidCommentException as e:
-            # Print error message if comment is invalid
-            print(str(e))
-            return False
-        
-        # check if user autheticated via userSession?
-
-        rating_data = {
-            "rating_value": rating_value,
-            "comment": comment,
-            "user_id": user_id,
-            "station_id": station_id
-        }
-        result = self.ratingService.create_rating(rating_data)
-        resultEvent = RatingCreated(**result)
-
-        return resultEvent
-
+            rating_data = {
+                "station_id": station_id,
+                "user_id": user_id,
+                "rating_value": rating_value,
+                "comment": comment,
+            }
+            # Use the service to create the rating
+            result = await self.ratingService.create_rating(rating_data)
+            return result
+        except ValueError as e:
+            print(f"Validation error: {e}")
+            raise
+        except Exception as e:
+            print(f"Error creating rating: {e}")
+            raise
 
 # Custom exceptions
 class InvalidRatingException(Exception):

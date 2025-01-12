@@ -92,17 +92,19 @@ async def rate_station(station_id: str, rating_value: int, comment: str, current
     Rate a charging station.
     """
     try:
-        result = rating_management.handle_create_rating(
+        rating_management = RatingManagement()  # Create an instance of RatingManagement
+        result = await rating_management.handle_create_rating(
             userSession=current_user,
             user_id=str(current_user["_id"]),
             station_id=station_id,
             rating_value=rating_value,
             comment=comment,
         )
-        return {"message": "Rating submitted successfully", "rating_id": str(result.station_id)}
+        return {"message": "Rating submitted successfully", "rating": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.get("/stations/{station_id}/ratings", tags=["Charging Stations"])
 async def get_station_ratings(station_id: str):
