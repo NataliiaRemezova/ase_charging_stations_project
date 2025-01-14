@@ -1,11 +1,29 @@
 import pandas as pd
 import streamlit as st
-from utils import load_data  # Import your utility functions
+from utils import DataLoader, SessionStateManager  # Import utility classes
 import folium
 from streamlit_folium import st_folium
 
-def display_details(df_lstat):
+def display_details(*args, **kwargs):
+    """
+    Displays detailed statistics and filters for charging stations in Berlin.
+    """
     st.subheader("Charging Station Details")
+
+    # Ensure session state variables are initialized
+    SessionStateManager.initialize_state()
+
+    # Load data using DataLoader if not already loaded in session state
+    if 'df_lstat' not in st.session_state or st.session_state.df_lstat.empty:
+        data_loader = DataLoader(
+            geodata_path='../datasets/geodata_berlin_plz.csv',
+            ladesaeulen_path='../datasets/Ladesaeulenregister_SEP.xlsx',
+            residents_path='../datasets/plz_einwohner.csv'
+        )
+        _, df_lstat, _ = data_loader.load_data()
+        st.session_state.df_lstat = df_lstat
+    else:
+        df_lstat = st.session_state.df_lstat
 
     # Filter the data for Berlin only
     berlin_df = df_lstat[df_lstat['Ort'] == 'Berlin']
@@ -55,5 +73,8 @@ def display_details(df_lstat):
 
     # Displaying detailed table with street and number info
     if st.checkbox("Show Detailed Data"):
-        # Update the column names based on your data
-        st.write(filtered_by_zip[['Postleitzahl', 'Straße', 'Hausnummer', 'Breitengrad', 'Längengrad', 'Art der Ladeeinrichung', 'Anzahl Ladepunkte']])
+        st.write(filtered_by_zip[[
+            'Postleitzahl', 'Straße', 'Hausnummer', 
+            'Breitengrad', 'Längengrad', 
+            'Art der Ladeeinrichung', 'Anzahl Ladepunkte'
+        ]])

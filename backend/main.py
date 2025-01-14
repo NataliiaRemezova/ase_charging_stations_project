@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Body
+from typing import Optional
 from backend.core import methods as m1
 from backend.config import pdict, DATA_PATHS
 from backend.src.user_profile.user_profile_service import router as auth_router
@@ -6,7 +7,7 @@ from backend.src.user_profile.user_profile_repositories import UserRepository
 import pandas as pd
 from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository
 from backend.src.charging_station_rating.charging_station_rating_service import RatingRepository
-from backend.src.charging_station_rating.charging_station_rating_management import RatingManagement
+from backend.src.charging_station_rating.charging_station_rating_management import Rating, RatingManagement
 from backend.src.charging_station_search.charging_station_search_management import InvalidPostalCodeException
 from backend.db.mongo_client import user_collection
 
@@ -75,6 +76,7 @@ async def search_stations(postal_code: str):
                     "postal_code": station.postal_code.value,
                     "availability_status": station.availability_status,
                     "location": station.location,
+                    "name": station.name,  # Include station name
                 }
                 for station in result.stations
             ],
@@ -87,18 +89,28 @@ async def search_stations(postal_code: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/stations/{station_id}/rate", tags=["Charging Stations"])
-async def rate_station(station_id: str, rating_value: int, comment: str, current_user=Depends(user_repository.get_user_by_id)):
+async def rate_station(
+    station_id: str,
+    rating_data: dict = Body(...),
+    user_id: Optional[str] = None,  # Make user_id optional
+    current_user=Depends(user_repository.get_user_by_id)
+):
     """
     Rate a charging station.
     """
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+
+    user_id = user_id or str(current_user["_id"])  # Use query or token-based user_id
     try:
-        rating_management = RatingManagement()  # Create an instance of RatingManagement
+        rating_management = RatingManagement()
         result = await rating_management.handle_create_rating(
             userSession=current_user,
-            user_id=str(current_user["_id"]),
+            user_id=user_id,
             station_id=station_id,
-            rating_value=rating_value,
-            comment=comment,
+            rating_value=rating_data.get("rating_value"),
+            comment=rating_data.get("comment"),
         )
         return {"message": "Rating submitted successfully", "rating": result}
     except ValueError as e:

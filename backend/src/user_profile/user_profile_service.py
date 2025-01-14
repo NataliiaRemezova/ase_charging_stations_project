@@ -43,7 +43,10 @@ async def get_user_profile(current_user=Depends(get_current_user)):
     """
     Retrieve current user profile
     """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     return {
+        "id": str(current_user["_id"]),
         "username": current_user["username"],
         "email": current_user["email"]
     }
