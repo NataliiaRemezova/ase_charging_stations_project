@@ -26,7 +26,8 @@ class UserRepository:
         return await self.collection.find_one({"email": email})
 
     async def get_user_by_id(self, user_id: str):
-        return await self.collection.find_one({"_id": ObjectId(user_id)})
+        user = await self.collection.find_one({"_id": ObjectId(user_id)})
+        return user
 
     async def verify_user_password(self, email: str, password: str):
         user = await self.get_user_by_email(email)

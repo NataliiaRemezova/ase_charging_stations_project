@@ -6,10 +6,12 @@ from utils import API_BASE_URL
 def display_registration():
     st.title("Welcome to ChargeHub Berlin 🌩")
 
-    if 'user_info' not in st.session_state:
+    # Initialize session state
+    if "user_info" not in st.session_state:
         st.session_state.user_info = None
 
     def login(email, password):
+        """Handles user login."""
         try:
             response = requests.post(
                 f"{API_BASE_URL}/auth/token",
@@ -19,14 +21,13 @@ def display_registration():
                 data = response.json()
                 token = data.get("access_token")
                 if token:
-                    # Store token and user info in session state
                     st.session_state.user_info = {
                         "token": token,
                         "username": email
                     }
                     st.success("Logged in successfully!")
 
-                    # Fetch user profile to confirm
+                    # Fetch user profile to confirm login
                     headers = {"Authorization": f"Bearer {token}"}
                     profile_response = requests.get(
                         f"{API_BASE_URL}/auth/users/me", headers=headers
@@ -35,29 +36,37 @@ def display_registration():
                         user_data = profile_response.json()
                         st.session_state.user_info["username"] = user_data.get("username")
                         st.session_state.user_info["email"] = user_data.get("email")
+                        st.session_state.user_info["user_id"] = user_data.get("id")  # Save user_id
+                        print("User info")
+                        print(st.session_state.user_info["user_id"])
+                        print("Get user id")
+                        print(user_data.get("id"))
                         st.success(f"Welcome, {user_data.get('username')}!")
                     else:
                         st.error("Failed to fetch user profile after login.")
                 else:
-                    st.error("Token not received. Please try again.")
+                    st.error("Login failed: Token not received.")
             else:
-                st.error(f"Failed to log in: {response.json().get('detail')}")
+                st.error(f"Login failed: {response.json().get('detail', 'Unknown error')}")
         except requests.exceptions.RequestException as e:
             st.error(f"Request failed: {e}")
 
+
     def register(username, email, password):
+        """Handles user registration."""
         try:
             response = requests.post(
                 f"{API_BASE_URL}/auth/register",
                 json={"username": username, "email": email, "password": password}
             )
-            if response.status_code == 200:
+            if response.status_code == 201:
                 st.success("Account created successfully! Please log in.")
             else:
                 st.error(f"Registration failed: {response.json().get('detail', 'Unknown error')}")
         except requests.exceptions.RequestException as e:
             st.error(f"Request failed: {e}")
 
+    # Display UI
     if st.session_state.user_info:
         st.subheader(f"Welcome, {st.session_state.user_info['username']}!")
         st.text(f"Email: {st.session_state.user_info.get('email', 'Not available')}")
@@ -65,7 +74,7 @@ def display_registration():
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.rerun()
+            st.experimental_rerun()
     else:
         tab1, tab2 = st.tabs(["Log In", "Sign Up"])
 

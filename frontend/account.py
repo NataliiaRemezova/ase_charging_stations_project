@@ -28,7 +28,7 @@ def display_account():
                     if response.status_code == 200:
                         st.success("Profile updated successfully!")
                     else:
-                        st.error("Failed to update profile.")
+                        st.error(f"Failed to update profile: {response.json().get('detail', 'Unknown error')}")
 
                 # Change Password
                 st.markdown("### Change Password")
@@ -45,11 +45,11 @@ def display_account():
                         if response.status_code == 200:
                             st.success("Password updated successfully!")
                         else:
-                            st.error("Failed to update password.")
+                            st.error(f"Failed to update password: {response.json().get('detail', 'Unknown error')}")
                     else:
                         st.error("Passwords do not match.")
             else:
-                st.error("Failed to fetch user data. Please log in again.")
+                st.error(f"Failed to fetch user data: {response.json().get('detail', 'Unknown error')}")
 
         except requests.exceptions.RequestException as e:
             st.error(f"Error: {e}")
@@ -57,7 +57,7 @@ def display_account():
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.rerun()
+            st.experimental_rerun()
     else:
         st.write("Please log in to view your account.")
         st.stop()
