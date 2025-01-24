@@ -1,9 +1,7 @@
 from backend.db.mongo_client import user_collection
-from passlib.context import CryptContext
+import bcrypt
 from bson.objectid import ObjectId
 from datetime import datetime
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserRepository:
@@ -11,7 +9,7 @@ class UserRepository:
         self.collection = collection
 
     async def create_user(self, username: str, email: str, password: str):
-        hashed_password = pwd_context.hash(password)
+        hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         user = {
             "username": username,
             "email": email,
@@ -31,6 +29,7 @@ class UserRepository:
 
     async def verify_user_password(self, email: str, password: str):
         user = await self.get_user_by_email(email)
-        if user and pwd_context.verify(password, user["hashed_password"]):
+        if user and bcrypt.checkpw(password.encode('utf-8'), user["hashed_password"].encode('utf-8')):
             return user
         return None
+    

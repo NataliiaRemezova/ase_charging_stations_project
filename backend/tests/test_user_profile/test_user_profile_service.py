@@ -1,40 +1,123 @@
 import pytest
-from user_profile import ProfileCreated, ProfileDeleted, ProfileStatus, UserProfileService, DuplicateUsernameException, UserRepository
+from httpx import AsyncClient
+import pytest_asyncio
+import asyncio
+from fastapi import status
+from fastapi.testclient import TestClient
+from backend.main import app
+from backend.db.mongo_client import user_collection
+from backend.src.user_profile.auth import create_access_token
+from datetime import timedelta
+import random
+import string
 
-def test_create_valid_user_profile():
-    # Arrange
-    profile_data = {
-        "username": "berlin_user",
+
+def generate_random_string(length=60):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choices(characters, k=length))
+
+
+@pytest_asyncio.fixture
+async def test_client():
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest.fixture(scope="session")
+def test_email():
+    return f"{generate_random_string()}@example.com"
+
+@pytest_asyncio.fixture
+async def test_user():
+    test_user_data = {
+        "username": "testuser",
         "email": "test@example.com",
-        "postal_code": "10115"
+        "password": "testpassword"
     }
-    service = UserProfileService(UserRepository())
-    # Act
-    result = service.create_profile(profile_data)
-    # Assert
-    assert isinstance(result.event, ProfileCreated)
-    assert result.profile.username == profile_data["username"]
-    assert result.profile.status == ProfileStatus.ACTIVE
+    await user_collection.insert_one(test_user_data)
+    yield test_user_data
+    await user_collection.delete_one({"email": test_user_data["email"]})
 
-def test_duplicate_username():
-    # Arrange
-    service = UserProfileService(UserRepository())
-    existing_profile = {
-        "username": "existing_user",
-        "email": "test@example.com",
-        "postal_code": "10115"
-    }
-    service.create_profile(existing_profile)
-    # Act & Assert
-    with pytest.raises(DuplicateUsernameException):
-        service.create_profile(existing_profile)
 
-def test_delete_profile():
-    # Arrange
-    service = UserProfileService (UserRepository())
-    profile_id = "user_123"
-    # Act
-    result = service.delete_profile(profile_id)
-    # Assert
-    assert isinstance(result.event, ProfileDeleted)
-    assert result.event.profile_id == profile_id
+@pytest_asyncio.fixture
+async def test_access_token(test_user):
+    return await create_access_token(
+        data={"sub": str(test_user["_id"])}, expires_delta=timedelta(minutes=30)
+    )
+
+
+@pytest.mark.asyncio
+async def test_register_user(test_client, test_email):
+    
+    response = await test_client.post(
+        "/auth/register",
+        json={
+            "username": "newuser",
+            "email": test_email,
+            "password": "testpassword"
+        }
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["message"] == "User registered successfully"
+
+
+@pytest.mark.asyncio
+async def test_register_existing_user(test_client, test_email):
+    
+    response = await test_client.post(
+        "/auth/register",
+        json={
+            "username": "testuser",
+            "email": test_email,
+            "password": "testpassword"
+        }
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "User already exists"
+
+
+@pytest.mark.asyncio
+async def test_login_user(test_client, test_email):
+    
+    response = await test_client.post(
+        "/auth/token",
+        data={"username": test_email, "password": "testpassword"}
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_user(test_client):
+    
+    response = await test_client.post(
+        "/auth/token",
+        data={"username": "wronguser", "password": "wrongpassword"}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Invalid credentials"
+
+
+@pytest.mark.asyncio
+async def test_get_user_profile(test_client, test_access_token):
+    
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    response = await test_client.get("/auth/users/me", headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    assert "username" in response.json()
+    assert "email" in response.json()
+
+
+@pytest.mark.asyncio
+async def test_get_user_profile_unauthenticated(test_client):
+    
+    response = await test_client.get("/auth/users/me")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Not authenticated"
+    

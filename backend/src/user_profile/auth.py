@@ -2,7 +2,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
+import bcrypt
 from backend.db.mongo_client import user_collection
 from .user_profile_repositories import UserRepository
 from bson.objectid import ObjectId
@@ -13,12 +13,14 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 repo = UserRepository(user_collection)
 
-async def verify_password(plain_password, hashed_password):
+async def verify_password(plain_password: str, hashed_password: str):
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
     except Exception as e:
         print(f"Password verification error: {e}")
         return False
@@ -32,6 +34,7 @@ async def authenticate_user(username: str, password: str):
     # Debug print for hashed password
     print(f"Stored hash: {user['hashed_password']}")
     print(f"Input password: {password}")
+    print(await verify_password(password, user["hashed_password"]))
 
     if await verify_password(password, user["hashed_password"]):
         return user
@@ -71,4 +74,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail=f"Could not validate credentials: {e}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-   
+    
