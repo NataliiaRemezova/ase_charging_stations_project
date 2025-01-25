@@ -25,12 +25,24 @@ app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 @app.get("/")
 async def root():
-    """Root endpoint for API health check."""
+    """
+    Root endpoint for API health check.
+    Returns a welcome message.
+    """
     return {"message": "Welcome to the Charging Station Backend API"}
 
 @app.get("/data", tags=["Data"])
 async def get_processed_data():
-    """Fetch preprocessed data from backend."""
+    """
+    Fetch preprocessed data from backend.
+    
+    This endpoint loads data from predefined paths, processes it,
+    and returns structured data for frontend compatibility.
+    
+    Returns:
+        dict: A dictionary containing processed geolocation, charging station,
+              and resident population data.
+    """
 
     try:
         # Load raw data
@@ -65,6 +77,12 @@ async def get_processed_data():
 async def search_stations(postal_code: str):
     """
     Search for charging stations by postal code.
+    
+    Args:
+        postal_code (str): The postal code to search for charging stations.
+    
+    Returns:
+        dict: A dictionary containing a list of charging stations and metadata.
     """
     try:
         service = StationSearchService(repository=station_repository)
@@ -97,6 +115,15 @@ async def rate_station(
 ):
     """
     Rate a charging station.
+    
+    Args:
+        station_id (str): ID of the charging station.
+        rating_data (dict): Contains rating value and optional comment.
+        user_id (Optional[str]): User ID, defaults to None.
+        current_user: Authenticated user session.
+    
+    Returns:
+        dict: A confirmation message and rating details.
     """
 
     if not current_user:
@@ -122,6 +149,12 @@ async def rate_station(
 async def get_station_ratings(station_id: str):
     """
     Get ratings for a specific charging station.
+    
+    Args:
+        station_id (str): The ID of the charging station.
+    
+    Returns:
+        list: A list of rating records.
     """
     try:
         ratings = await rating_repository.get_ratings_by_station(station_id)

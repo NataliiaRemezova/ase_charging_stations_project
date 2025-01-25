@@ -13,6 +13,16 @@ async def login_user(
     username: str = Form(...),
     password: str = Form(...)
 ):
+    """
+    Authenticate a user and return an access token.
+    
+    Args:
+        username (str): The username of the user.
+        password (str): The password of the user.
+    
+    Returns:
+        dict: A dictionary containing the access token and token type.
+    """
     user = await authenticate_user(username, password)
     if not user:
         raise HTTPException(
@@ -29,7 +39,13 @@ async def login_user(
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(register: RegisterRequest):
     """
-    Register a new user
+    Register a new user.
+    
+    Args:
+        register (RegisterRequest): The registration details including username, email, and password.
+    
+    Returns:
+        dict: A confirmation message upon successful registration.
     """
     user = await repo.get_user_by_email(register.email)
     if user:
@@ -41,7 +57,13 @@ async def register_user(register: RegisterRequest):
 @router.get("/users/me")
 async def get_user_profile(current_user=Depends(get_current_user)):
     """
-    Retrieve current user profile
+    Retrieve the current authenticated user's profile.
+    
+    Args:
+        current_user: The currently authenticated user session.
+    
+    Returns:
+        dict: A dictionary containing the user's ID, username, and email.
     """
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -55,6 +77,14 @@ async def get_user_profile(current_user=Depends(get_current_user)):
 async def update_user(user_id: str, update_data: dict, current_user=Depends(get_current_user)):
     """
     Update user details.
+    
+    Args:
+        user_id (str): The ID of the user to update.
+        update_data (dict): A dictionary containing updated user fields.
+        current_user: The currently authenticated user session.
+    
+    Returns:
+        dict: A confirmation message upon successful update.
     """
     if str(current_user["_id"]) != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to update this user")
@@ -67,6 +97,13 @@ async def update_user(user_id: str, update_data: dict, current_user=Depends(get_
 async def delete_user(user_id: str, current_user=Depends(get_current_user)):
     """
     Delete a user by ID.
+    
+    Args:
+        user_id (str): The ID of the user to delete.
+        current_user: The currently authenticated user session.
+    
+    Returns:
+        dict: A confirmation message upon successful deletion.
     """
     if str(current_user["_id"]) != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this user")

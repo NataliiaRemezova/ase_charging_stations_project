@@ -16,6 +16,16 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 repo = UserRepository(user_collection)
 
 async def verify_password(plain_password: str, hashed_password: str):
+    """
+    Verify that the provided plain password matches the stored hashed password.
+    
+    Args:
+        plain_password (str): The plaintext password provided by the user.
+        hashed_password (str): The hashed password stored in the database.
+    
+    Returns:
+        bool: True if the passwords match, False otherwise.
+    """
     try:
         if isinstance(hashed_password, str):
             hashed_password = hashed_password.encode('utf-8')
@@ -27,20 +37,35 @@ async def verify_password(plain_password: str, hashed_password: str):
     
 
 async def authenticate_user(username: str, password: str):
+    """
+    Authenticate the user by verifying their credentials.
+    
+    Args:
+        username (str): The email or username of the user.
+        password (str): The plaintext password provided by the user.
+    
+    Returns:
+        dict | bool: The user document if authentication is successful, otherwise False.
+    """
     user = await repo.get_user_by_email(username)
     if user is None:
-        return False  # No such user found
-
-    # Debug print for hashed password
-    print(f"Stored hash: {user['hashed_password']}")
-    print(f"Input password: {password}")
-    print(await verify_password(password, user["hashed_password"]))
+        return False
 
     if await verify_password(password, user["hashed_password"]):
         return user
     return False
 
 async def create_access_token(data: dict, expires_delta: timedelta = None):
+    """
+    Generate a JWT access token with an expiration time.
+    
+    Args:
+        data (dict): The data to encode in the JWT token.
+        expires_delta (timedelta, optional): Expiration time delta. Defaults to 15 minutes.
+    
+    Returns:
+        str: The encoded JWT access token.
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -51,6 +76,18 @@ async def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """
+    Retrieve the currently authenticated user from the JWT token.
+    
+    Args:
+        token (str): The JWT access token provided by the user.
+    
+    Returns:
+        dict: The user document if authentication is successful.
+    
+    Raises:
+        HTTPException: If the token is invalid or the user is not found.
+    """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
