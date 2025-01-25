@@ -9,6 +9,7 @@ class UserRepository:
         self.collection = collection
 
     async def create_user(self, username: str, email: str, password: str):
+        """Create user."""
         hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         user = {
             "username": username,
@@ -21,15 +22,25 @@ class UserRepository:
         return result.inserted_id
 
     async def get_user_by_email(self, email: str):
+        """Get user by email."""
         return await self.collection.find_one({"email": email})
 
     async def get_user_by_id(self, user_id: str):
+        """Get user by id."""
         user = await self.collection.find_one({"_id": ObjectId(user_id)})
         return user
+    
+    async def update_user(self, user_id: str, update_data: dict):
+        """Update user details."""
+        update_data["updated_at"] = datetime.utcnow()
+        result = await self.collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+        return result.modified_count > 0
 
-    async def verify_user_password(self, email: str, password: str):
-        user = await self.get_user_by_email(email)
-        if user and bcrypt.checkpw(password.encode('utf-8'), user["hashed_password"].encode('utf-8')):
-            return user
-        return None
+    async def delete_user(self, user_id: str):
+        """Delete a user by ID."""
+        result = await self.collection.delete_one({"_id": ObjectId(user_id)})
+        return result.deleted_count > 0
     

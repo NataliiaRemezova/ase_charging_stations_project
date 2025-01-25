@@ -41,7 +41,6 @@ async def test_user():
     }
     await user_collection.insert_one(test_user_data)
     yield test_user_data
-    await user_collection.delete_one({"email": test_user_data["email"]})
 
 
 @pytest_asyncio.fixture
@@ -120,4 +119,84 @@ async def test_get_user_profile_unauthenticated(test_client):
     response = await test_client.get("/auth/users/me")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json()["detail"] == "Not authenticated"
-    
+
+
+@pytest.mark.asyncio
+async def test_update_user(test_client, test_access_token, test_user):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    updated_data = {"username": "updateduser"}
+
+    response = await test_client.put(
+        f"/auth/users/{test_user['_id']}",
+        json=updated_data,
+        headers=headers
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"] == "User updated successfully"
+
+
+@pytest.mark.asyncio
+async def test_update_user_unauthorized(test_client, test_user):
+    updated_data = {"username": "unauthorizedupdate"}
+
+    response = await test_client.put(
+        f"/auth/users/{test_user['_id']}",
+        json=updated_data
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_update_other_user_forbidden(test_client, test_access_token):
+
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    updated_data = {"username": "hacker"}
+
+    fake_user_id = "65f2c3f8b35e0c7d6a10e9f1"
+
+    response = await test_client.put(
+        f"/auth/users/{fake_user_id}",
+        json=updated_data,
+        headers=headers
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "Not authorized to update this user"
+
+
+@pytest.mark.asyncio
+async def test_delete_user(test_client, test_access_token, test_user):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+
+    response = await test_client.delete(
+        f"/auth/users/{test_user['_id']}",
+        headers=headers
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"] == "User deleted successfully"
+
+
+@pytest.mark.asyncio
+async def test_delete_user_unauthorized(test_client, test_user):
+    response = await test_client.delete(f"/auth/users/{test_user['_id']}")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Not authenticated"
+
+
+@pytest.mark.asyncio
+async def test_delete_other_user_forbidden(test_client, test_access_token):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    fake_user_id = "65f2c3f8b35e0c7d6a10e9f2"
+
+    response = await test_client.delete(
+        f"/auth/users/{fake_user_id}",
+        headers=headers
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "Not authorized to delete this user"
