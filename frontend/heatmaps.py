@@ -18,11 +18,11 @@ def display_heatmaps(df_lstat, df_geodat_plz, df_residents):
         ]
     )
 
-    gdf_lstat = m1.preprop_lstat(df_lstat, df_geodat_plz, pdict)
+    gdf_lstat = m1.preprocess_lstat(df_lstat, df_geodat_plz, pdict)
     gdf_lstat3 = m1.count_plz_occurrences(gdf_lstat)
-    gdf_residents2 = m1.preprop_resid(df_residents, df_geodat_plz, pdict)
+    gdf_residents2 = m1.preprocess_resid(df_residents, df_geodat_plz, pdict)
 
     if function_selection == "Heatmap: Electric Charging Stations and Residents":
-        m1.make_streamlit_electric_Charging_resid(gdf_lstat3, gdf_residents2)
+        m1.create_streamlit_map(gdf_lstat3, gdf_residents2)
     else:
-        m1.make_streamlit_electric_Charging_resid_by_kw(gdf_lstat3, gdf_residents2)
+        m1.create_streamlit_map(gdf_lstat3, gdf_residents2, True)
