@@ -39,9 +39,9 @@ async def get_processed_data():
         df_residents = pd.read_csv(DATA_PATHS['plz_einwohner'])
 
         # Data preprocessing
-        gdf_lstat = m1.preprop_lstat(df_lstat, df_geodat_plz, pdict)
+        gdf_lstat = m1.preprocess_lstat(df_lstat, df_geodat_plz, pdict)
         gdf_lstat3 = m1.count_plz_occurrences(gdf_lstat)
-        gdf_residents2 = m1.preprop_resid(df_residents, df_geodat_plz, pdict)
+        gdf_residents2 = m1.preprocess_resid(df_residents, df_geodat_plz, pdict)
 
         # Standardize column names
         gdf_lstat3.rename(columns={"PLZ": "Postleitzahl"}, inplace=True)

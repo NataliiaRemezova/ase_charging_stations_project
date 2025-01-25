@@ -1,6 +1,6 @@
 import pandas as pd
 from backend.db.mongo_client import station_collection  
-from backend.core.methods import preprop_lstat
+from backend.core.methods import preprocess_lstat
 from backend.config import pdict, DATA_PATHS
 import asyncio
 
@@ -33,7 +33,7 @@ async def index_charging_stations():
         df_geodata = pd.read_csv(DATA_PATHS['geodata_berlin_plz'], sep=';')
 
         # Preprocess the data
-        processed_data = preprop_lstat(df_lstat, df_geodata, pdict)
+        processed_data = preprocess_lstat(df_lstat, df_geodata, pdict)
         if processed_data is None or processed_data.empty:
             print("No valid data to process.")
             return
