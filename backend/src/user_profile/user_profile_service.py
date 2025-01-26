@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from datetime import timedelta
-from .auth import create_access_token, authenticate_user, get_current_user
+from .auth import create_access_token, authenticate_user, get_current_user, verify_password
 from .user_profile_repositories import UserRepository
 from backend.db.mongo_client import user_collection
-from .user_models import RegisterRequest, Token
+from .user_models import RegisterRequest, Token, User
+import bcrypt
 
 router = APIRouter()
 repo = UserRepository(user_collection)
@@ -88,6 +89,18 @@ async def update_user(user_id: str, update_data: dict, current_user=Depends(get_
     """
     if str(current_user["_id"]) != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to update this user")
+    if "old_password" in update_data and "new_password" in update_data:
+        old_password = update_data.pop("old_password")
+        new_password = update_data.pop("new_password")
+        print("eblo")
+        user_data = await repo.get_user_by_id(user_id)
+        if user_data:
+            print(await verify_password(old_password, user_data["hashed_password"]))
+            if not await verify_password(old_password, user_data["hashed_password"]):
+                raise HTTPException(status_code=400, detail="User update failed")
+        
+        hashed_new_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        update_data["hashed_password"] = hashed_new_password
     success = await repo.update_user(user_id, update_data)
     if not success:
         raise HTTPException(status_code=400, detail="User update failed")
