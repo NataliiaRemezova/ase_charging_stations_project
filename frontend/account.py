@@ -55,7 +55,7 @@ def display_account():
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.write("Please log in to view your account.")
         st.stop()

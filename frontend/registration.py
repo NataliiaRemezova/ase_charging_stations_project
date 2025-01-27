@@ -74,7 +74,7 @@ def display_registration():
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.experimental_rerun()
+            st.rerun()
     else:
         tab1, tab2 = st.tabs(["Log In", "Sign Up"])
 
