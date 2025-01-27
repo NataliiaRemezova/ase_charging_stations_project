@@ -134,6 +134,7 @@ async def rate_station(
         rating_management = RatingManagement()
         result = await rating_management.handle_create_rating(
             userSession=current_user,
+            username=current_user["username"],
             user_id=user_id,
             station_id=station_id,
             rating_value=rating_data.get("rating_value"),

@@ -7,7 +7,7 @@ class RatingRepository:
     """
     Repository for handling rating data storage and retrieval in MongoDB.
     """
-    async def save_rating(self, station_id: str, user_id: str, rating_value: int, comment: str):
+    async def save_rating(self, station_id: str, username: str, user_id: str, rating_value: int, comment: str):
         """
         Save a rating into MongoDB.
         
@@ -23,6 +23,7 @@ class RatingRepository:
         rating_data = {
             "station_id": station_id,
             "user_id": user_id,
+            "username": username,
             "rating_value": rating_value,
             "comment": comment,
             "timestamp": datetime.utcnow(),
@@ -45,6 +46,7 @@ class RatingRepository:
             {
                 "rating_value": rating["rating_value"],
                 "comment": rating["comment"],
+                "username": rating["username"],
                 "user_id": rating["user_id"],
                 "timestamp": rating["timestamp"].isoformat(),
             }
@@ -76,6 +78,7 @@ class RatingService:
         rating_value = rating_data.get("rating_value")
         station_id = rating_data.get("station_id")
         user_id = rating_data.get("user_id")
+        username = rating_data.get("username")
         comment = rating_data.get("comment")
 
         # Validate input (if needed, you can add custom exceptions)
@@ -85,12 +88,13 @@ class RatingService:
             raise ValueError("Comment must be 500 characters or less.")
 
         # Save the rating using the repository
-        rating_id = await self.repository.save_rating(station_id, user_id, rating_value, comment)
+        rating_id = await self.repository.save_rating(station_id, username, user_id, rating_value, comment)
 
         # Return the saved rating data
         return {
             "id": rating_id,
             "station_id": station_id,
+            "username": username,
             "user_id": user_id,
             "rating_value": rating_value,
             "comment": comment,
