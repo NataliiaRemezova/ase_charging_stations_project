@@ -4,9 +4,21 @@ from bson.objectid import ObjectId
 
 
 class RatingRepository:
+    """
+    Repository for handling rating data storage and retrieval in MongoDB.
+    """
     async def save_rating(self, station_id: str, user_id: str, rating_value: int, comment: str):
         """
         Save a rating into MongoDB.
+        
+        Args:
+            station_id (str): The ID of the charging station being rated.
+            user_id (str): The ID of the user providing the rating.
+            rating_value (int): The rating value between 1 and 5.
+            comment (str): The user's comment.
+        
+        Returns:
+            str: The ID of the saved rating.
         """
         rating_data = {
             "station_id": station_id,
@@ -21,6 +33,12 @@ class RatingRepository:
     async def get_ratings_by_station(self, station_id: str):
         """
         Retrieve ratings for a specific charging station from MongoDB.
+        
+        Args:
+            station_id (str): The ID of the charging station.
+        
+        Returns:
+            list: A list of rating dictionaries.
         """
         ratings = await rating_collection.find({"station_id": station_id}).to_list(100)
         return [
@@ -35,12 +53,24 @@ class RatingRepository:
 
 
 class RatingService:
+    """
+    Service layer for managing rating-related operations.
+    """
     def __init__(self, repository: RatingRepository):
         self.repository = repository
 
     async def create_rating(self, rating_data: dict) -> dict:
         """
         Create a new rating and save it in the repository.
+        
+        Args:
+            rating_data (dict): The rating details including station ID, user ID, rating value, and comment.
+        
+        Returns:
+            dict: The saved rating data.
+        
+        Raises:
+            ValueError: If rating value is out of range or comment exceeds the character limit.
         """
         # Extract fields from rating_data
         rating_value = rating_data.get("rating_value")
