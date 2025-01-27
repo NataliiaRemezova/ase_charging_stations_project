@@ -92,7 +92,6 @@ async def update_user(user_id: str, update_data: dict, current_user=Depends(get_
     if "old_password" in update_data and "new_password" in update_data:
         old_password = update_data.pop("old_password")
         new_password = update_data.pop("new_password")
-        print("eblo")
         user_data = await repo.get_user_by_id(user_id)
         if user_data:
             print(await verify_password(old_password, user_data["hashed_password"]))
