@@ -52,6 +52,31 @@ def submit_rating(station_id, rating_value, comment, token, user_id):
             st.error(f"Failed to submit rating: {response.json().get('detail', 'Unknown error')}")
     except requests.exceptions.RequestException as e:
         st.error(f"Error: {e}")
+        
+def change_availability_status(station_id, token, user_id):
+    """
+    Change a availability for a charging station via backend API.
+    """
+    if not token:
+        st.error("You must be logged in to rate a station.")
+        return
+
+    headers = {"Authorization": f"Bearer {token}"}
+    url = f"http://localhost:8000/stations/{station_id}/availability?user_id={user_id}"  # Add user_id to query
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            st.success("Availability changed successfully!")
+        else:
+            st.error(f"Failed to change availability: {response.json().get('detail', 'Unknown error')}")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error: {e}")
+    
 
 # ------------------------------
 # 🚀 Fetch Ratings for a Charging Station
@@ -153,6 +178,13 @@ def display_postal_code(df_lstat):
                     else:
                         st.error("You must be logged in to rate a station.")
 
+                if st.button("Change Availability"):
+                    if 'user_info' in st.session_state and st.session_state.user_info:
+                        token = st.session_state.user_info.get("token")
+                        user_id = st.session_state.user_info.get("user_id")
+                        change_availability_status(station_id, token, user_id)
+                    else:
+                        st.error("You must be logged in to change an availability.")
                 # 📊 Display Ratings
                 st.markdown(f"### **User Reviews for {location_name}**")
                 ratings = fetch_station_ratings(station_id)
