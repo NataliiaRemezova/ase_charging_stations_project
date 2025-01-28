@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Body
 from typing import Optional
-from backend.core import methods as m1
+from backend.utilities import methods as m1
 from backend.config import pdict, DATA_PATHS
 from backend.src.user_profile.user_profile_service import router as auth_router
 from backend.src.user_profile.user_profile_repositories import UserRepository

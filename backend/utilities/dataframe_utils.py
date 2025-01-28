@@ -1,31 +1,5 @@
-import math
+from .timer_utils import timer
 import pandas as pd
-import pickle
-import time
-import functools
-import random
-from collections import Counter, OrderedDict
-import logging
-
-# ------------------------------------------------------------------------------
-# Logging Configuration
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# ------------------------------------------------------------------------------
-# Utility Decorators
-
-def timer(func):
-    """Decorator to measure execution time of a function."""
-    @functools.wraps(func)
-    def wrapper_timer(*args, **kwargs):
-        start_time = time.perf_counter()
-        value = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        run_time = end_time - start_time
-        logger.info(f"Duration {run_time:.2f} secs: {func.__doc__}")
-        return value
-    return wrapper_timer
 
 # ------------------------------------------------------------------------------
 # Predicates
@@ -37,21 +11,6 @@ def is_element_filled(element, dictionary):
 def has_unique_index(dataframe):
     """Checks if a pandas DataFrame has unique index values."""
     return not dataframe.duplicated(keep="first").any()
-
-# ------------------------------------------------------------------------------
-# Serialization
-
-@timer 
-def serialize_object(obj, filename):
-    """Serializes an object to a file using pickle."""
-    with open(filename, "wb") as file:
-        pickle.dump(obj, file)
-
-@timer 
-def deserialize_object(filename):
-    """Deserializes an object from a pickle file."""
-    with open(filename, "rb") as file:
-        return pickle.load(file)
 
 # ------------------------------------------------------------------------------
 # Data Cleaning and Processing
@@ -91,25 +50,6 @@ def remove_nan_from_dict(dictionary):
 def remove_none_from_dict(dictionary):
     """Removes key-value pairs with None values from a dictionary."""
     return {k: v for k, v in dictionary.items() if v is not None}
-
-# ------------------------------------------------------------------------------
-# Math Operations
-
-def intersection(set1, set2):
-    """Returns the intersection of two sets."""
-    return list(set(set1).intersection(set2))
-
-def binomial_coefficient(n, k):
-    """Computes the binomial coefficient (n choose k)."""
-    return math.factorial(n) // (math.factorial(k) * math.factorial(n - k))
-
-def generate_random_color():
-    """Generates a random hexadecimal color code."""
-    return "#" + "".join(random.choice('0123456789ABCDEF') for _ in range(6))
-
-def count_frequencies(iterable):
-    """Counts frequency of elements in an iterable and returns an ordered dictionary."""
-    return OrderedDict(sorted(Counter(iterable).items()))
 
 # ------------------------------------------------------------------------------
 # DataFrame Operations
