@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 from utils import API_BASE_URL
 
-
 def display_account():
     if 'user_info' in st.session_state and st.session_state.user_info:
         token = st.session_state.user_info.get("token")
@@ -18,12 +17,11 @@ def display_account():
                 # Edit Profile
                 st.markdown("### Edit Profile")
                 new_username = st.text_input("Username", value=user_data['username'])
-                new_email = st.text_input("Email", value=user_data['email'])
                 if st.button("Save Profile"):
                     response = requests.put(
-                        f"{API_BASE_URL}/auth/users/me",
+                        f"{API_BASE_URL}/auth/users/{user_data['id']}",
                         headers=headers,
-                        json={"username": new_username, "email": new_email}
+                        json={"username": new_username}  # Email is NOT changed
                     )
                     if response.status_code == 200:
                         st.success("Profile updated successfully!")
@@ -37,8 +35,8 @@ def display_account():
                 confirm_password = st.text_input("Confirm New Password", type="password")
                 if st.button("Change Password"):
                     if new_password == confirm_password:
-                        response = requests.post(
-                            f"{API_BASE_URL}/auth/change-password",
+                        response = requests.put(
+                            f"{API_BASE_URL}/auth/users/{user_data['id']}",
                             headers=headers,
                             json={"old_password": old_password, "new_password": new_password}
                         )
@@ -57,7 +55,7 @@ def display_account():
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.experimental_rerun()
+            st.rerun()
     else:
         st.write("Please log in to view your account.")
         st.stop()

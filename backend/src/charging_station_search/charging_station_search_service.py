@@ -5,9 +5,18 @@ from backend.db.mongo_client import station_collection
 from backend.src.charging_station_search.charging_station_search_management import ChargingStation, PostalCode, SearchResult, ChargingStationSearched
 
 class StationRepository:
+    """
+    Repository for accessing charging station data from MongoDB.
+    """
     async def find_by_postal_code(self, postal_code: PostalCode):
         """
         Query MongoDB for charging stations by postal code.
+        
+        Args:
+            postal_code (PostalCode): The postal code to search for charging stations.
+        
+        Returns:
+            List[ChargingStation]: A list of matching charging stations.
         """
         try:
             results = await station_collection.find({"postal_code": postal_code.value}).to_list(100)  # Limit results for performance
@@ -26,12 +35,21 @@ class StationRepository:
             return []
 
 class StationSearchService:
+    """
+    Service for searching charging stations by postal code.
+    """
     def __init__(self, repository: StationRepository):
         self.repository = repository
 
     async def search_by_postal_code(self, code: str) -> SearchResult:
         """
         Search for charging stations by postal code.
+        
+        Args:
+            code (str): The postal code to search for charging stations.
+        
+        Returns:
+            SearchResult: The search result containing stations and event metadata.
         """
         postal_code = PostalCode(code)
         # Await the asynchronous repository method

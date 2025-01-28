@@ -158,7 +158,7 @@ def display_postal_code(df_lstat):
                 ratings = fetch_station_ratings(station_id)
                 if ratings:
                     for r in ratings:
-                        st.write(f"⭐ {r['rating_value']} - {r['comment']}")
+                        st.write(f" {r['username']}: ⭐ {r['rating_value']} - {r['comment']}")
                 else:
                     st.write("No reviews available for this station.")
             else:
