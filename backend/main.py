@@ -195,3 +195,73 @@ async def get_station_ratings(station_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
     
+@app.put("/ratings/{rating_id}", tags=["Ratings"])
+async def update_rating(
+            rating_id: str,
+            rating_data: dict = Body(...),
+            user_id: Optional[str] = None
+        ):
+    """
+    Update a specific rating based on its ID.
+    
+    Args:
+        rating_id (str): The ID of the rating to update.
+    
+    Returns:
+        dict: The updated rating record.
+    
+    Raises:
+        HTTPException: If the rating does not exist or if validation fails.
+    """
+    try:
+        if user_id is not None:
+            if rating_repository.get_rating_by_id(rating_id)["user_id"] == user_id:
+                rating_value=rating_data.get("rating_value"),
+                comment=rating_data.get("comment"),
+                updated_rating = await rating_repository.update_rating(
+                    rating_id=rating_id,
+                    comment=comment,
+                    rating_value=rating_value
+                )
+            else:
+                raise HTTPException(status_code=401, detail="The action of this user is not allowed")
+        else:
+            raise HTTPException(status_code=401, detail="User is not authorized")
+        if not updated_rating:
+            raise HTTPException(status_code=404, detail="Rating not found")
+        return updated_rating
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.delete("/ratings/{rating_id}", tags=["Ratings"])
+async def delete_rating(
+            rating_id: str,
+            user_id: Optional[str] = None):
+    """
+    Delete a specific rating based on its ID.
+    
+    Args:
+        rating_id (str): The ID of the rating to delete.
+    
+    Returns:
+        dict: A success message.
+    
+    Raises:
+        HTTPException: If the rating does not exist.
+    """
+    try:
+        if user_id is not None:
+            if rating_repository.get_rating_by_id(rating_id)["user_id"] == user_id:
+                success = await rating_repository.delete_rating(rating_id)
+            else:
+                raise HTTPException(status_code=401, detail="The action of this user is not allowed")
+        else:
+            raise HTTPException(status_code=401, detail="User is not authorized")
+        if not success:
+            raise HTTPException(status_code=404, detail="Rating not found")
+        return {"message": "Rating deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")

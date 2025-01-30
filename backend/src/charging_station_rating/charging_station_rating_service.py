@@ -31,27 +31,63 @@ class RatingRepository:
         result = await rating_collection.insert_one(rating_data)
         return str(result.inserted_id)  # Return the ID of the saved rating
 
-    async def get_ratings_by_station(self, station_id: str):
+    async def get_rating_by_id(self, rating_id: str):
         """
-        Retrieve ratings for a specific charging station from MongoDB.
+        Retrieve a specific rating by its ID from MongoDB.
         
         Args:
-            station_id (str): The ID of the charging station.
+            rating_id (str): The ID of the rating to retrieve.
         
         Returns:
-            list: A list of rating dictionaries.
+            dict: The rating data, or None if not found.
         """
-        ratings = await rating_collection.find({"station_id": station_id}).to_list(100)
-        return [
-            {
+        rating = await rating_collection.find_one({"_id": ObjectId(rating_id)})
+        if rating:
+            return {
                 "rating_value": rating["rating_value"],
                 "comment": rating["comment"],
                 "username": rating["username"],
                 "user_id": rating["user_id"],
                 "timestamp": rating["timestamp"].isoformat(),
             }
-            for rating in ratings
-        ]
+        return None
+        
+    async def update_rating(self, rating_id: str, rating_value: int = None, comment: str = None):
+        """
+        Update an existing rating in MongoDB.
+        
+        Args:
+            rating_id (str): The ID of the rating to update.
+            rating_value (int, optional): The new rating value.
+            comment (str, optional): The new comment.
+        
+        Returns:
+            bool: True if the update was successful, False otherwise.
+        """
+        update_data = {}
+        update_data["rating_value"] = rating_value
+        update_data["comment"] = comment
+        
+        if update_data:
+            result = await rating_collection.update_one(
+                {"_id": ObjectId(rating_id)},
+                {"$set": update_data}
+            )
+            return result.modified_count > 0
+        return False
+
+    async def delete_rating(self, rating_id: str):
+        """
+        Delete a rating from MongoDB.
+        
+        Args:
+            rating_id (str): The ID of the rating to delete.
+        
+        Returns:
+            bool: True if the deletion was successful, False otherwise.
+        """
+        result = await rating_collection.delete_one({"_id": ObjectId(rating_id)})
+        return result.deleted_count > 0
 
 
 class RatingService:
@@ -100,3 +136,45 @@ class RatingService:
             "comment": comment,
             "timestamp": datetime.utcnow().isoformat(),
         }
+        
+    async def update_rating(self, rating_id: str, rating_value: int = None, comment: str = None) -> dict:
+        """
+        Update an existing rating.
+        
+        Args:
+            rating_id (str): The ID of the rating to update.
+            rating_value (int, optional): The new rating value.
+            comment (str, optional): The new comment.
+        
+        Returns:
+            dict: The updated rating data.
+        
+        Raises:
+            ValueError: If rating value is out of range or comment exceeds the character limit.
+        """
+        # Validate input for update (if applicable)
+        if not (1 <= rating_value <= 5):
+            raise ValueError("Rating value must be between 1 and 5.")
+        if len(comment) > 500:
+            raise ValueError("Comment must be 500 characters or less.")
+
+        # Perform the update in the repository
+        success = await self.repository.update_rating(rating_id, rating_value, comment)
+        if not success:
+            raise ValueError("Rating not found or update failed.")
+        
+        # Return the updated rating data
+        updated_rating = await self.repository.get_ratings_by_station(rating_id)  # Adjust if necessary
+        return updated_rating[0] if updated_rating else {}
+
+    async def delete_rating(self, rating_id: str) -> bool:
+        """
+        Delete an existing rating.
+        
+        Args:
+            rating_id (str): The ID of the rating to delete.
+        
+        Returns:
+            bool: True if the deletion was successful, False otherwise.
+        """
+        return await self.repository.delete_rating(rating_id)
