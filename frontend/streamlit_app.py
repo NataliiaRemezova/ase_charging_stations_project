@@ -68,7 +68,7 @@ else:
     st.write("ℹ️ Data already loaded in session state.")
 
 # Sidebar Navigation with unique keys
-navigation_options = ["Home", "Heatmaps", "Postal Code Search", "Details", "Registration"]
+navigation_options = ["Home", "Heatmaps", "Postal Code Search" ,"Details", "Registration"]
 if st.session_state["user_info"]:
     navigation_options.append("My Account")
 
