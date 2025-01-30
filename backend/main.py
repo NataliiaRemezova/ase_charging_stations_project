@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Body
 from typing import Optional
-from backend.core import methods as m1
+from backend.utilities import methods as m1
 from backend.config import pdict, DATA_PATHS
 from backend.src.user_profile.user_profile_service import router as auth_router
 from backend.src.user_profile.user_profile_repositories import UserRepository
@@ -145,6 +145,38 @@ async def rate_station(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/stations/{station_id}/availability", tags=["Charging Stations"])
+async def rate_station(
+    station_id: str,
+    user_id: Optional[str] = None,
+    current_user=Depends(user_repository.get_user_by_id)
+):
+    """
+    Change an availability of the station
+    
+    Args:
+        station_id (str): ID of the charging station.
+        user_id (Optional[str]): User ID, defaults to None.
+        current_user: Authenticated user session.
+    
+    Returns:
+        dict: A confirmation message.
+    """
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+
+    user_id = user_id or str(current_user["_id"])  # Use query or token-based user_id
+    try:
+        update_result = await station_repository.update_availability_status(station_id)
+        return {"message": "Availability changed successfully", "availability_status": update_result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/stations/{station_id}/ratings", tags=["Charging Stations"])
 async def get_station_ratings(station_id: str):

@@ -33,6 +33,42 @@ class StationRepository:
         except Exception as e:
             print(f"Error querying stations: {e}")
             return []
+    
+    async def find_by_object_id(self, object_id: ObjectId):
+        """
+        Query MongoDB for charging stations by ObjectId.
+        
+        Args:
+            object_id (ObjectId): The objectId to search for charging stations.
+        
+        Returns:
+            ChargingStation: An element of matching charging station.
+        """
+        try:
+            result = await station_collection.find_one({"_id": object_id})
+            return ChargingStation(
+                    id=str(result["_id"]),
+                    postal_code=PostalCode(result["postal_code"]),
+                    availability_status=result["availability_status"],
+                    location=f"{result['location']['latitude']}, {result['location']['longitude']}",
+                    name=result.get("name", "Unknown Name"),
+                )
+            
+        except Exception as e:
+            print(f"Error querying stations: {e}")
+            return None
+    
+    async def update_availability_status(self, station_id: str):
+        try:
+            station = await self.find_by_object_id(ObjectId(station_id))
+            new_status = not station.availability_status
+            station_collection.update_one(
+                {"_id": ObjectId(station_id)},
+                {"$set": {"availability_status": new_status}}
+            )
+        except Exception as e:
+            print(f"Error querying stations: {e}")
+            return []
 
 class StationSearchService:
     """
@@ -60,3 +96,4 @@ class StationSearchService:
             timestamp=datetime.now()
         )
         return SearchResult(stations=stations, event=event)
+

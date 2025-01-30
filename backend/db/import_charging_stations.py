@@ -1,6 +1,6 @@
 import pandas as pd
 from backend.db.mongo_client import station_collection  
-from backend.core.methods import preprocess_lstat
+from backend.utilities.methods import preprocess_lstat
 from backend.config import pdict, DATA_PATHS
 import asyncio
 
