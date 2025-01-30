@@ -143,7 +143,6 @@ async def rate_station(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(e)
         raise HTTPException(status_code=500, detail=str(e))
     
 
