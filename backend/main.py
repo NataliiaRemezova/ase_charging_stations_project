@@ -133,7 +133,6 @@ async def rate_station(
     try:
         rating_management = RatingManagement()
         result = await rating_management.handle_create_rating(
-            userSession=current_user,
             username=current_user["username"],
             user_id=user_id,
             station_id=station_id,
@@ -144,6 +143,7 @@ async def rate_station(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
     
 
