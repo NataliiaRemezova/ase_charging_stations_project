@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 import pytest_asyncio
+import bcrypt
 import asyncio
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -37,7 +38,7 @@ async def test_user():
     test_user_data = {
         "username": "testuser",
         "email": "test@example.com",
-        "password": "testpassword"
+        "hashed_password": "testpassword"
     }
     await user_collection.insert_one(test_user_data)
     yield test_user_data
@@ -200,3 +201,44 @@ async def test_delete_other_user_forbidden(test_client, test_access_token):
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert response.json()["detail"] == "Not authorized to delete this user"
+
+
+@pytest.mark.asyncio
+async def test_update_user_unauthorized(test_client):
+    response = await test_client.put("/auth/users/someuserid", json={"username": "newname"})
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+@pytest.mark.asyncio
+async def test_update_user_forbidden(test_client, test_access_token):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    response = await test_client.put("/auth/users/differentuserid", json={"username": "newname"}, headers=headers)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.json()["detail"] == "Not authorized to update this user"
+
+@pytest.mark.asyncio
+async def test_update_user_wrong_password(test_client, test_access_token, test_user):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    response = await test_client.put(
+        f"/auth/users/{test_user['_id']}",
+        json={"old_password": "wrongpassword", "new_password": "newpass123"},
+        headers=headers
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "User update failed"
+
+@pytest.mark.asyncio
+async def test_update_user_successful(test_client, test_access_token, test_user):
+    headers = {"Authorization": f"Bearer {test_access_token}"}
+    new_password = "newpassword123"
+    hashed_old_password = bcrypt.hashpw(test_user["hashed_password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    await user_collection.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"hashed_password": hashed_old_password}}
+    )
+    response = await test_client.put(
+        f"/auth/users/{test_user['_id']}",
+        json={"old_password": test_user["hashed_password"], "new_password": new_password},
+        headers=headers
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"] == "User updated successfully"
