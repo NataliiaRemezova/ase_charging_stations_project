@@ -53,12 +53,11 @@ class RatingManagement:
     def __init__(self):
         self.ratingService = RatingService(repository=RatingRepository())
 
-    async def handle_create_rating(self, userSession, username, user_id, station_id, rating_value, comment):
+    async def handle_create_rating(self, username, user_id, station_id, rating_value, comment):
         """
         Handle creating a rating, performing validation, and saving it.
         
         Args:
-            userSession: The authenticated user session.
             username (str): The username of the user.
             user_id (str): The ID of the user creating the rating.
             station_id (str): The ID of the station being rated.

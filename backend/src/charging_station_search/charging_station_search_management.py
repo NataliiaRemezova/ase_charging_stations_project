@@ -2,7 +2,29 @@ from dataclasses import dataclass
 from datetime import datetime, time 
 from typing import List, Optional, ClassVar
 from backend.src.charging_station_rating.charging_station_rating_service import RatingService
-from backend.src.charging_station.charging_station_management import PostalCode
+
+@dataclass (frozen=True)
+class PostalCode:
+    """
+    Represents a postal code, ensuring it is a valid Berlin postal code.
+    
+    Attributes:
+        value (str): The postal code string.
+    
+    Raises:
+        InvalidPostalCodeException: If the postal code is not valid for Berlin.
+    """
+    value: str
+    def __post_init__(self):
+        if not self._is_valid_berlin_postal_code():
+            raise InvalidPostalCodeException(
+                f"{self. value} ist keine gültige Berliner PLZ"
+            )
+    
+    def _is_valid_berlin_postal_code(self) -> bool:
+        return (self.value.startswith(("10", "12", "13"))
+            and len(self.value) == 5)
+
 
 @dataclass
 class ChargingStation:
