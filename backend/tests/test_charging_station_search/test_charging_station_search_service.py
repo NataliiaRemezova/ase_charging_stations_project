@@ -4,6 +4,50 @@ from backend.src.charging_station_search.charging_station_search_management impo
     PostalCode, ChargingStation, SearchResult, ChargingStationSearched, InvalidPostalCodeException
 )
 from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository
+from backend.db.mongo_client import station_collection
+import asyncio
+
+@pytest.fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop()
+    yield loop
+    
+@pytest.mark.asyncio
+async def test_find_by_postal_code_real():
+    """
+    Test finding charging stations using the actual StationRepository.
+    """
+    # Arrange: Insert test data into MongoDB
+    postal_code = "10115"
+    test_stations = [
+        {
+            "_id": "1",
+            "postal_code": postal_code,
+            "availability_status": True,
+            "location": {"latitude": 52.5200, "longitude": 13.4050},
+            "name": "Test Station 1",
+        },
+        {
+            "_id": "2",
+            "postal_code": postal_code,
+            "availability_status": False,
+            "location": {"latitude": 52.5300, "longitude": 13.4100},
+            "name": "Test Station 2",
+        },
+    ]
+    await station_collection.insert_many(test_stations)
+
+    repository = StationRepository()
+
+    # Act: Call the actual method
+    result = await repository.find_by_postal_code(PostalCode(postal_code))
+
+    # Assert: Verify correct output
+    assert len(result) == len(test_stations)
+    assert all(station.postal_code.value == postal_code for station in result)
+
+    # Cleanup: Remove test data
+    await station_collection.delete_many({"postal_code": postal_code})
 
 @pytest.mark.asyncio
 async def test_search_by_postal_code():
