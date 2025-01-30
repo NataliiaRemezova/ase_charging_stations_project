@@ -31,6 +31,29 @@ class RatingRepository:
         result = await rating_collection.insert_one(rating_data)
         return str(result.inserted_id)  # Return the ID of the saved rating
 
+    async def get_ratings_by_station(self, station_id: str):
+        """
+        Retrieve ratings for a specific charging station from MongoDB.
+        
+        Args:
+            station_id (str): The ID of the charging station.
+        
+        Returns:
+            list: A list of rating dictionaries.
+        """
+        ratings = await rating_collection.find({"station_id": station_id}).to_list(100)
+        return [
+            {
+                "rating_value": rating["rating_value"],
+                "comment": rating["comment"],
+                "username": rating["username"],
+                "user_id": rating["user_id"],
+                "timestamp": rating["timestamp"].isoformat(),
+            }
+            for rating in ratings
+        ]
+
+
     async def get_rating_by_id(self, rating_id: str):
         """
         Retrieve a specific rating by its ID from MongoDB.
