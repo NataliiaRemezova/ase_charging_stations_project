@@ -94,7 +94,6 @@ async def update_user(user_id: str, update_data: dict, current_user=Depends(get_
         new_password = update_data.pop("new_password")
         user_data = await repo.get_user_by_id(user_id)
         if user_data:
-            print(await verify_password(old_password, user_data["hashed_password"]))
             if not await verify_password(old_password, user_data["hashed_password"]):
                 raise HTTPException(status_code=400, detail="User update failed")
         
