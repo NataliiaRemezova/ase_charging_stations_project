@@ -218,6 +218,8 @@ async def update_rating(
     try:
         if user_id is not None:
             rating = await rating_repository.get_rating_by_id(rating_id)
+            if rating is None:
+                raise HTTPException(status_code=404, detail="Rating not found")
             repo_user_id = rating["user_id"]
             if repo_user_id == user_id:
                 rating_value=rating_data.get("rating_value"),
@@ -236,6 +238,8 @@ async def update_rating(
         return updated_rating
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -260,6 +264,8 @@ async def delete_rating(
     try:
         if user_id is not None:
             rating = await rating_repository.get_rating_by_id(rating_id)
+            if rating is None:
+                raise HTTPException(status_code=404, detail="Rating not found")
             repo_user_id = rating["user_id"]
             if repo_user_id == user_id:
                 success = await rating_repository.delete_rating(rating_id)
@@ -270,6 +276,8 @@ async def delete_rating(
         if not success:
             raise HTTPException(status_code=404, detail="Rating not found")
         return {"message": "Rating deleted successfully"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail="Internal server error")
