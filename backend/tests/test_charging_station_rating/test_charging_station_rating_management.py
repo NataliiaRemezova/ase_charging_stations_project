@@ -25,6 +25,7 @@ Version:
 import pytest
 import pytest_asyncio
 import asyncio
+from unittest.mock import patch, AsyncMock
 from datetime import datetime
 from charging_station_rating.charging_station_rating_management import (
     Rating,
@@ -47,29 +48,26 @@ def event_loop():
     loop.close()
 
 @pytest_asyncio.fixture
-async def mock_rating_service(mocker):
+async def mock_rating_service():
     """Fixture to mock the RatingService with async support."""
-    # Patch the target service
-    mock_service = mocker.patch(
-        "charging_station_rating.charging_station_rating_service.RatingService",
-        autospec=True
-    )
+    # Create a mock instance for RatingService
+    mock_service = AsyncMock()
+    mock_service.create_rating.return_value = "mocked result"
+    return mock_service
 
-    # Mock async methods using mocker.AsyncMock
-    instance = mock_service.return_value
-    instance.create_rating = mocker.AsyncMock(return_value="mocked result")
-
-    return instance
-    
 @pytest_asyncio.fixture
 async def rating_management(mock_rating_service):
     """Fixture to initialize RatingManagement with a mocked RatingService."""
-    rating_management = RatingManagement()
-    rating_management.ratingService = mock_rating_service
-    return rating_management
+    # Patch the RatingService constructor during the test
+    with patch(
+        "charging_station_rating.charging_station_rating_service.RatingService",
+        return_value=mock_rating_service
+    ):
+        # Instantiate RatingManagement while the patch is active
+        return RatingManagement()
 
 @pytest.mark.asyncio
-async def test_handle_create_rating_success(mocker, rating_management, mock_rating_service):
+async def test_handle_create_rating_success(rating_management, mock_rating_service):
     """TC 1: authenticated user creation of valid rating - success."""
     # Stub the create_rating method
     timestamp = datetime.now().utcnow().isoformat()
