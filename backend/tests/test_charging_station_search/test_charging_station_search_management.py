@@ -1,10 +1,10 @@
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock
-from backend.src.charging_station_search.charging_station_search_management import (
-    PostalCode, InvalidPostalCodeException, ChargingStation, ChargingStationSearched, SearchResult
+from backend.src.charging_station_search.charging_station_search_service import (
+    PostalCode, InvalidPostalCodeException, ChargingStation, ChargingStationSearched, SearchResult, StationSearchService
 )
-from backend.src.charging_station_search.charging_station_search_service import StationSearchService
+from backend.src.charging_station_search.charging_station_search_management import StationSearchManagement
 
 
 pytestmark = pytest.mark.asyncio  # Mark all tests as async
@@ -39,7 +39,9 @@ async def test_search_stations_by_valid_postal_code():
     repository_mock.find_by_postal_code.return_value = [
         ChargingStation(id="1", location="City Center", postal_code=postal_code, availability_status=True)
     ]
-    service = StationSearchService(repository_mock)
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
 
     # Act
     result = await service.search_by_postal_code("10115")
@@ -60,7 +62,10 @@ async def test_search_stations_with_invalid_postal_code():
     """
     # Act & Assert
     with pytest.raises(InvalidPostalCodeException) as exc_info:
-        await StationSearchService(AsyncMock()).search_by_postal_code("99999")  # Invalid Berlin PLZ
+        station_search_service = StationSearchService(AsyncMock())
+        station_search_management = StationSearchManagement()
+        station_search_management.stationService = station_search_service
+        await station_search_management.search_by_postal_code("99999")  # Invalid Berlin PLZ
 
     assert "99999 ist keine gültige Berliner PLZ" in str(exc_info.value)
 
@@ -75,7 +80,9 @@ async def test_empty_search_result():
     postal_code = PostalCode("10115")
     repository_mock = AsyncMock()
     repository_mock.find_by_postal_code.return_value = []  # No stations found
-    service = StationSearchService(repository_mock)
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
 
     # Act
     result = await service.search_by_postal_code("10115")
@@ -100,7 +107,9 @@ async def test_search_stations_availability():
         ChargingStation(id="1", location="Station A", postal_code=postal_code, availability_status=True),
         ChargingStation(id="2", location="Station B", postal_code=postal_code, availability_status=False),
     ]
-    service = StationSearchService(repository_mock)
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
 
     # Act
     result = await service.search_by_postal_code("10115")
@@ -134,7 +143,9 @@ async def test_search_stations_with_exact_timestamp():
     repository_mock.find_by_postal_code.return_value = [
         ChargingStation(id="1", location="City Center", postal_code=postal_code, availability_status=True)
     ]
-    service = StationSearchService(repository_mock)
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
 
     # Act
     result = await service.search_by_postal_code("10115")

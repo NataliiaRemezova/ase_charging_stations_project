@@ -5,10 +5,10 @@ from backend.config import pdict, DATA_PATHS
 from backend.src.user_profile.user_profile_service import router as auth_router
 from backend.src.user_profile.user_profile_repositories import UserRepository
 import pandas as pd
-from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository
+from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository,InvalidPostalCodeException
 from backend.src.charging_station_rating.charging_station_rating_service import RatingRepository
 from backend.src.charging_station_rating.charging_station_rating_management import Rating, RatingManagement
-from backend.src.charging_station_search.charging_station_search_management import InvalidPostalCodeException
+from backend.src.charging_station_search.charging_station_search_management import StationSearchManagement
 from backend.db.mongo_client import user_collection
 
 app = FastAPI()
@@ -16,6 +16,7 @@ app = FastAPI()
 # Initialize repositories
 user_repository = UserRepository(user_collection)
 station_repository = StationRepository()
+station_management = StationSearchManagement()
 rating_repository = RatingRepository()
 rating_management = RatingManagement()
 
@@ -85,8 +86,9 @@ async def search_stations(postal_code: str):
         dict: A dictionary containing a list of charging stations and metadata.
     """
     try:
-        service = StationSearchService(repository=station_repository)
-        result = await service.search_by_postal_code(postal_code) 
+        station_management = StationSearchManagement()
+        #service = StationSearchService(repository=station_repository)
+        result = await station_management.search_by_postal_code(postal_code) 
         return {
             "stations": [
                 {
@@ -169,7 +171,8 @@ async def rate_station(
 
     user_id = user_id or str(current_user["_id"])  # Use query or token-based user_id
     try:
-        update_result = await station_repository.update_availability_status(station_id)
+        station_management = StationSearchManagement()
+        update_result = await station_management.update_availability_status(station_id)
         return {"message": "Availability changed successfully", "availability_status": update_result}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
