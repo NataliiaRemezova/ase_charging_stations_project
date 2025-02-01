@@ -64,7 +64,11 @@ class RatingManagement:
         Returns:
             list: A list of rating dictionaries.
         """
-        ratings = await self.ratingService.get_ratings_by_station(station_id)
+        try:
+            ratings = await self.ratingService.get_ratings_by_station(station_id)
+        except Exception as e:
+            print(f"Error getting ratings: {e}")
+            raise
         return ratings
     
     async def handle_get_rating_by_id(self, rating_id: str):

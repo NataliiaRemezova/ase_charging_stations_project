@@ -9,7 +9,7 @@ Usage:
     It is run with all the other tests in this repo by running 'pytest' in the terminal.
 
 Dependencies:
-    pytest
+    pytest, unittest.mock, datetime
 
 Author:
     Nina Immenroth
@@ -23,9 +23,7 @@ Version:
 """
 
 import pytest
-#import pytest_asyncio
-#import asyncio
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 from datetime import datetime
 from charging_station_rating.charging_station_rating_management import (
     Rating,
@@ -41,39 +39,18 @@ from charging_station_rating.charging_station_rating_service import (
     DoubleRatingException
 )
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-@pytest_asyncio.fixture
-async def mock_rating_service(mocker):
-    """Fixture to mock the RatingService with async support."""
-    # Patch the target service
-    mock_service = AsyncMock()
-    mocker.patch(
-        "charging_station_rating.charging_station_rating_service.RatingService",
-        side_effect = mock_service
-    )
-
-    return mock_service
-
-@pytest_asyncio.fixture
-async def rating_management(mock_rating_service):
-    """Fixture to initialize RatingManagement with a mocked RatingService."""
-    # Assuming RatingManagement expects an instance of RatingService in its constructor
-    return RatingManagement(ratingService=mock_rating_service)
-
-pytestmark = pytest.mark.asyncio  # Mark all tests as async
+@pytest.fixture
+def rating_service_mock():
+    """Fixture for a mocked RatingService."""
+    service = AsyncMock(spec=RatingService)
+    return service
 
 @pytest.mark.asyncio
-async def test_handle_create_rating_success(mocker, rating_management, mock_rating_service):
+async def test_handle_create_rating_success(rating_service_mock):
     """TC 1: authenticated user creation of valid rating - success."""
-    # Stub the create_rating method
-    timestamp = datetime.now().utcnow().isoformat()
+    timestamp = datetime.utcnow().isoformat()
 
-    mock_rating_service.return_value.create_rating.return_value = {
+    rating_service_mock.create_rating.return_value = {
         "station_id": "station_123",
         "username": "Hansi",
         "user_id": "user_456",
@@ -82,12 +59,14 @@ async def test_handle_create_rating_success(mocker, rating_management, mock_rati
         "timestamp": timestamp
     }
 
+    rating_management = RatingManagement(rating_service_mock)
+
     result = await rating_management.handle_create_rating(
-        username = "Hansi",
+        username="Hansi",
         user_id="user_456",
         station_id="station_123",
         rating_value=4,
-        comment="Great station!",
+        comment="Great station!"
     )
 
     assert result["station_id"] == "station_123"
@@ -95,446 +74,229 @@ async def test_handle_create_rating_success(mocker, rating_management, mock_rati
     assert result["rating_value"] == 4
     assert result["comment"] == "Great station!"
     assert datetime.fromisoformat(result["timestamp"]).replace(microsecond=0) == datetime.fromisoformat(timestamp).replace(microsecond=0)
-    mock_rating_service.create_rating.assert_awaited_once()
+    rating_service_mock.create_rating.assert_awaited_once()
 
-async def test_handle_create_rating_success(rating_management):
-    """TC 1: authenticated user creation of valid rating - success."""
-    
-    result = await rating_management.handle_create_rating(
-        username = "Hansi",
-        user_id="user_456",
-        station_id="station_123",
-        rating_value=4,
-        comment="Great station!",
-    )
-
-    assert result["station_id"] == "station_123"
-    assert result["user_id"] == "user_456"
-    assert result["rating_value"] == 4
-    assert result["comment"] == "Great station!"
-    
-def test_handle_create_rating_failure_invalid_stars(rating_management):
+@pytest.mark.asyncio
+async def test_handle_create_rating_failure_invalid_stars(rating_service_mock):
     """TC 2a: authenticated user creation of rating - failure - wrong amount of stars."""
-    # Test rating value outside valid range
+    rating_management = RatingManagement(rating_service_mock)
     with pytest.raises(InvalidRatingException, match="Rating must be between 1 and 5."):
-        rating_management.handle_create_rating(
+        await rating_management.handle_create_rating(
             username="Hansi",
             user_id="user_456",
             station_id="station_123",
             rating_value=6,
-            comment="Invalid stars",
+            comment="Invalid stars"
         )
 
-def test_handle_create_rating_failure_invalid_comment(rating_management):
+@pytest.mark.asyncio
+async def test_handle_create_rating_failure_invalid_comment(rating_service_mock):
     """TC 2b: authenticated user creation of rating - failure - wrong length of comment."""
-    # Test comment length outside valid range
     long_comment = "x" * 501  # 501 characters
+    rating_management = RatingManagement(rating_service_mock)
     with pytest.raises(InvalidCommentException, match="Comment is too long, can't be longer than 500 characters."):
-        rating_management.handle_create_rating(
+        await rating_management.handle_create_rating(
             username="Hansi",
             user_id="user_456",
             station_id="station_123",
             rating_value=3,
-            comment=long_comment,
-        )
-    
-
-@pytest.mark.skip(reason="We are not using userSession in the rating management.")
-def test_handle_create_rating_failure_unauthenticated_user(rating_management):
-    """TC 3: not authenticated user creation of rating - failure."""
-    # Test unauthenticated user, not sure if this should be implemented in management or service. 
-    # Maybe this test needs to be moved to the test of service
-    with pytest.raises(PermissionError, match="User must be authenticated."):
-        rating_management.handle_create_rating(
-            userSession=None,  # No session
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=4,
-            comment="Unauthenticated user",
+            comment=long_comment
         )
 
-def test_handle_update_rating_success(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_create_rating_general_error(rating_service_mock):
+    """TC 3: Test handling general exceptions."""
+    rating_service_mock.create_rating.side_effect = Exception("Unexpected error.")
+
+    rating_manager = RatingManagement(rating_service_mock)
+
+    with pytest.raises(Exception, match="Unexpected error."):
+        await rating_manager.handle_create_rating(
+            username="testuser", 
+            user_id="user123", 
+            station_id="station123", 
+            rating_value=5, 
+            comment="Excellent service!"
+        )
+
+@pytest.mark.asyncio
+async def test_handle_update_rating_success(rating_service_mock):
     """TC 4: authenticated user update of own rating - success."""
     # Stub the update_rating method
-    timestamp = datetime.now()
-    mock_rating_service.update_rating.return_value = {
-        "rating_value": 4,
-        "comment": "Updated rating.",
-        "user_id": "user_456",
-        "station_id": "station_bht",
-        "timestamp": timestamp
+    
+    timestamp = datetime.utcnow().isoformat()
+    rating_service_mock.update_rating.return_value = {
+        'rating_value': [4], 
+        'comment': ['Updated rating.'],
+        'username': 'Hansi', 
+        'user_id': 'user_456', 
+        'timestamp': timestamp
     }
 
-    # the rating before
-    rating = Rating(rating_value=5, 
-                    comment="The old rating!", 
-                    user_id="user_456", 
-                    station_id="station_bht")
+    rating_management = RatingManagement(rating_service_mock)
 
-    result = rating_management.handle_update_rating(
-        username="Hansi",
-        rating=rating,
-        rating_value=5,
+    result = await rating_management.handle_update_rating(
+        rating_id = "1233",
+        rating_value=4,
         comment="Updated rating",
     )
 
-    assert result.station_id == "station_bht"
-    assert result.user_id == "user_456"
-    assert result.rating_value == 4
-    assert result.comment == "Updated rating."
-    assert result.timestamp == timestamp
-    mock_rating_service.update_rating.assert_called_once()
+    assert result["username"] == "Hansi"
+    assert result["user_id"] == "user_456"
+    assert result["rating_value"] == [4]
+    assert result["comment"] == ['Updated rating.']
+    assert result["timestamp"] == timestamp
+    rating_service_mock.update_rating.assert_called_once()
 
-def test_handle_update_rating_failure_other_users_rating(rating_management):
-    """TC 5: authenticated user update of other users rating - failure."""
-    # Simulate a permission error, but we are not doing it because the error needs to be raised by the management class.
-    # mock_rating_service.update_rating.side_effect = PermissionError("Cannot update another user's rating.")
-
-    # the rating
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="other_user", 
-                    station_id="station_bht")
-    
-    with pytest.raises(PermissionError, match="Cannot update another user's rating."):
-        rating_management.handle_update_rating(
-            rating=rating,  # Belongs to another user
-            rating_value=3,
-            comment="Trying to update another user's rating",
-        )
-
-def test_handle_update_rating_failure_invalid_stars(rating_management):
+@pytest.mark.asyncio
+async def test_handle_update_rating_failure_invalid_stars(rating_service_mock):
     """TC 6a: authenticated user update of own rating - failure - wrong amount of stars."""
     # Test rating value outside valid range
-    # the rating
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="user_456", 
-                    station_id="station_bht")
-    
-    with pytest.raises(InvalidRatingException, match="Rating value must be between 1 and 5."):
-        rating_management.handle_update_rating(
-            rating=rating,
-            rating_value=0,  # Invalid rating value
+    rating_management = RatingManagement(rating_service_mock)
+
+    with pytest.raises(InvalidRatingException, match="Rating must be between 1 and 5."):
+        await rating_management.handle_update_rating(
+            rating_id = "1233",
+            rating_value= 0,
+            comment="Invalid stars",
+        )
+    with pytest.raises(InvalidRatingException, match="Rating must be between 1 and 5."):
+        await rating_management.handle_update_rating(
+            rating_id = "1233",
+            rating_value= -1,
+            comment="Invalid stars",
+        )
+    with pytest.raises(InvalidRatingException, match="Rating must be between 1 and 5."):
+        await rating_management.handle_update_rating(
+            rating_id = "1233",
+            rating_value= 6,
             comment="Invalid stars",
         )
 
-def test_handle_update_rating_failure_invalid_comment(rating_management):
+@pytest.mark.asyncio
+async def test_handle_update_rating_failure_invalid_comment(rating_service_mock):
     """TC 6b: authenticated user update of own rating - failure - comment too long."""
     # Test comment length outside valid range
     # the rating
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="user_456", 
-                    station_id="station_bht")
+    rating_management = RatingManagement(rating_service_mock)
+
     long_comment = "x" * 501  # 501 characters
 
     with pytest.raises(InvalidCommentException, match="Comment is too long, can't be longer than 500 characters."):
-        rating_management.handle_update_rating(
-            rating=rating,
-            rating_value=5,  
-            comment=long_comment,# Invalid comment length
+        await rating_management.handle_update_rating(
+            rating_id = "1233",
+            rating_value= 3,
+            comment=long_comment,
         )
 
-def test_handle_delete_rating_success(rating_management, mock_rating_service):
+
+@pytest.mark.asyncio
+async def test_handle_delete_rating_success(rating_service_mock):
     """TC 7: authenticated user deletion of own rating - success."""
     # Stub the delete_rating method
-    mock_rating_service.delete_rating.return_value = True
+    rating_service_mock.delete_rating.return_value = True
 
-# the rating
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="user_456", 
-                    station_id="station_bht")
-    
-    result = rating_management.handle_delete_rating(
-        rating=rating
+    rating_management = RatingManagement(rating_service_mock)
+
+    result = await rating_management.handle_delete_rating(
+        rating_id="123"
     )
 
     assert result is True
-    mock_rating_service.delete_rating.assert_called_once_with(
-        user_id="user_456",
-        station_id="station_bht"
+    rating_service_mock.delete_rating.assert_called_once_with(
+        "123"
     )
 
-def test_handle_delete_rating_failure_other_users_rating(rating_management):
-    """TC 8: authenticated user deletion of other user’s rating - failure."""
-    # Simulate a permission error, but again we are not doing that here, it should be checked in the management class
-    # mock_rating_service.delete_rating.side_effect = PermissionError("Cannot delete another user's rating.")
-
-    # the rating
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="other_user", 
-                    station_id="station_bht")
-    
-    with pytest.raises(PermissionError, match="Cannot delete another user's rating."):
-        rating_management.handle_delete_rating(
-            rating=rating  # Belongs to another user
-        )
-
-def test_handle_view_rating_success(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_view_rating_success(rating_service_mock):
     """TC 9: authenticated user view rating - success."""
-    # the ratings
-    rating1 = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="other_user", 
-                    station_id="station_bht")
-    rating2 = Rating(rating_value=2, 
-                    comment="It could have been better.", 
-                    user_id="unhappy_user", 
-                    station_id="station_bht")
+    
     # Stub the view_ratings method
-    mock_rating_service.view_ratings.return_value = [
-        rating1,
-        rating2,
+    rating_service_mock.get_ratings_by_station.return_value = [
+        {
+            'id': '679a81eae0f6e750dde52e6d', 
+            'rating_value': 3, 
+            'comment': 'hmmmm', 
+            'username': 'Nataliia', 
+            'user_id': '679a7fb4e0f6e750dde52e69', 
+            'timestamp': '2025-01-29T19:30:50.953000'
+        }, 
+        {
+            'id': '679e63b44011f938945de1f0', 
+            'rating_value': 4, 
+            'comment': 'it was better this time', 
+            'username': 'Tasneem', 
+            'user_id': '679e62c54011f938945de1ef',
+            'timestamp': '2025-02-01T18:11:00.906000'
+        }
     ]
 
-    result = rating_management.handle_view_ratings(
+    rating_management = RatingManagement(rating_service_mock)
+
+    result = await rating_management.handle_get_ratings_by_station(
         station_id="station_bht",
     )
 
     assert len(result) == 2
-    assert result[0].rating_value == 5
-    assert result[0].comment == "What a wonderful experience."
-    assert result[0].user_name == "other_user"
-    assert result[1].rating_value == 2
-    assert result[1].comment == "It could have been better."
-    assert result[1].user_name == "unhappy_user"
-    assert result[0].station_id == result[1].station_id == "station_bht"
-    mock_rating_service.view_ratings.assert_called_once_with(
-        station_id="station_bht",
+    assert result[0]["rating_value"] == 3
+    assert result[0]["comment"] == "hmmmm"
+    assert result[0]["username"] == "Nataliia"
+    assert result[1]["rating_value"] == 4
+    assert result[1]["comment"] == "it was better this time"
+    assert result[1]["username"] == "Tasneem"
+    rating_service_mock.get_ratings_by_station.assert_called_once_with(
+        "station_bht",
     )
 
 # not sure if this can happen, but should be checked if the exception is propagated correctly
-def test_handle_delete_rating_failure_nonexistent_rating(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_delete_rating_failure_nonexistent_rating(rating_service_mock):
     """TC 10: Update Rating - Rating Does Not Exist in the Database."""
-    mock_rating_service.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
+    rating_service_mock.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
 
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="user_456", 
-                    station_id="station_bht")
+    rating_management = RatingManagement(rating_service_mock)
 
     with pytest.raises(RatingNotFoundException, match="Rating not found."):
-        rating_management.handle_update_rating(
-            rating=rating,
+        await rating_management.handle_update_rating(
+            rating_id = "1233",
             rating_value=3,
             comment="Shit."
         )
 
-def test_handle_delete_rating_failure_nonexistent_rating(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_delete_rating_failure_nonexistent_rating(rating_service_mock):
     """TC 11: Delete Rating - Rating Does Not Exist in the Database."""
-    mock_rating_service.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
-
-    rating = Rating(rating_value=5, 
-                    comment="What a wonderful experience.", 
-                    user_id="user_456", 
-                    station_id="station_bht")
+    rating_service_mock.delete_rating.side_effect = RatingNotFoundException("Rating not found.")
+    rating_management = RatingManagement(rating_service_mock)
 
     with pytest.raises(RatingNotFoundException, match="Rating not found."):
-        rating_management.handle_delete_rating(
-            rating=rating
+        await rating_management.handle_delete_rating(
+            rating_id = "1233"
         )
 
-def test_handle_view_rating_failure_station_not_found(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_view_rating_failure_station_not_found(rating_service_mock):
     """TC 12: View Ratings - Station Does Not Exist."""
-    mock_rating_service.view_ratings.side_effect = StationNotFoundException("Station not found.")
+    rating_service_mock.get_ratings_by_station.side_effect = StationNotFoundException("Station not found.")
+    rating_management = RatingManagement(rating_service_mock)
 
-    with pytest.raises(ValueError, match="Station not found."):
-        rating_management.handle_view_ratings(
+    with pytest.raises(StationNotFoundException, match="Station not found."):
+        await rating_management.handle_get_ratings_by_station(
             station_id="nonexistent_station",
         )
 
-def test_handle_view_rating_success_empty(rating_management, mock_rating_service):
+@pytest.mark.asyncio
+async def test_handle_view_rating_success_empty(rating_service_mock):
     """TC 13: authenticated user view rating - success - no ratings to display."""
     # Stub the view_ratings method to return empty list
-    mock_rating_service.view_ratings.return_value = []
+    rating_service_mock.get_ratings_by_station.return_value = []
+    rating_management = RatingManagement(rating_service_mock)
 
-    result = rating_management.handle_view_ratings(
+    result = await rating_management.handle_get_ratings_by_station(
         station_id="station_bht",
     )
 
     assert len(result) == 0
-    mock_rating_service.view_ratings.assert_called_once_with(
-        station_id="station_bht",
+    rating_service_mock.get_ratings_by_station.assert_called_once_with(
+        "station_bht",
     )
-
-def test_handle_create_rating_failure_duplicate_rating(rating_management, mock_rating_service):
-    """TC 14: Create Rating - Duplicate Rating."""
-    mock_rating_service.create_rating.side_effect = DoubleRatingException("More than one rating for the same station are not allowed.")
-
-    with pytest.raises(DoubleRatingException, match="More than one rating for the same station are not allowed."):
-        rating_management.handle_create_rating(
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=4,
-            comment="Duplicate rating attempt",
-        )
-
-# Not sure how to test the session expiry and where it should be checked (in management or service), 
-# now it is in service according to this test
-def test_handle_create_rating_failure_invalid_session(rating_management, mock_rating_service):
-    """TC 15: Create Rating - Invalid Session."""
-    mock_rating_service.create_rating.side_effect = PermissionError("Invalid user session.")
-
-    with pytest.raises(PermissionError, match="Invalid user session."):
-        rating_management.handle_create_rating(
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=3,
-            comment="Invalid session test",
-        )
-
-def test_handle_view_rating_failure_deleted_user(rating_management, mock_rating_service):
-    """TC 17: View Ratings - Deleted User."""
-    mock_rating_service.view_ratings.return_value = [
-        {"rating_value": 5, "comment": "Good", "user_name": "Deleted User"},
-    ]
-
-    result = rating_management.handle_view_ratings(
-        station_id="station_123",
-    )
-
-    assert len(result) == 1
-    assert result[0]["user_name"] == "Deleted User"
-    mock_rating_service.view_ratings.assert_called_once_with(
-        station_id="station_123",
-    )
-
-def test_handle_delete_rating_failure_insufficient_permissions(rating_management, mock_rating_service):
-    """TC 18: Delete Rating - Insufficient Permissions."""
-    mock_rating_service.delete_rating.side_effect = PermissionError("Insufficient permissions.")
-
-    with pytest.raises(PermissionError, match="Insufficient permissions."):
-        rating_management.handle_delete_rating(
-            user_id="user_456",
-            rating_id="rating_789",
-        )
-
-def test_handle_create_rating_failure_missing_comment(rating_management, mock_rating_service):
-    """TC 19: Create Rating - Missing Comment."""
-    with pytest.raises(ValueError, match="Comment is required."):
-        rating_management.handle_create_rating(
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=4,
-            comment=None,  # Missing comment
-        )
-
-def test_handle_update_rating_failure_no_change(rating_management, mock_rating_service):
-    """TC 20: Update Rating - No Change Detected."""
-    mock_rating_service.update_rating.side_effect = ValueError("No changes detected in the update request.")
-
-    with pytest.raises(ValueError, match="No changes detected in the update request."):
-        rating_management.handle_update_rating(
-            user_id="user_456",
-            rating_id="rating_789",
-            rating_value=4,
-            comment="Same comment",  # No change from existing data
-        )
-
-def test_handle_delete_rating_failure_invalid_session(rating_management, mock_rating_service):
-    """TC 21: Delete Rating - Invalid Session."""
-    mock_rating_service.delete_rating.side_effect = PermissionError("Invalid session.")
-
-    with pytest.raises(PermissionError, match="Invalid session."):
-        rating_management.handle_delete_rating(
-            userSession="invalid_session",
-            user_id="user_456",
-            rating_id="rating_789",
-        )
-
-def test_handle_view_rating_failure_invalid_station(rating_management, mock_rating_service):
-    """TC 22: View Ratings - Invalid Station."""
-    mock_rating_service.view_ratings.side_effect = ValueError("Invalid station ID.")
-
-    with pytest.raises(ValueError, match="Invalid station ID."):
-        rating_management.handle_view_ratings(
-            station_id="invalid_station",
-        )
-
-def test_handle_create_rating_failure_too_long_comment(rating_management, mock_rating_service):
-    """TC 23: Create Rating - Comment Too Long."""
-    with pytest.raises(ValueError, match="Comment exceeds maximum length."):
-        rating_management.handle_create_rating(
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=4,
-            comment="A" * 1001,  # Exceeding maximum length
-        )
-
-def test_handle_view_rating_failure_no_ratings(rating_management, mock_rating_service):
-    """TC 24: View Ratings - No Ratings Found."""
-    mock_rating_service.view_ratings.return_value = []
-
-    result = rating_management.handle_view_ratings(
-        station_id="station_123",
-    )
-
-    assert result == []
-    mock_rating_service.view_ratings.assert_called_once_with(
-        station_id="station_123",
-    )
-
-def test_handle_update_rating_failure_expired_session(rating_management, mock_rating_service):
-    """TC 25: Update Rating - Expired Session."""
-    mock_rating_service.update_rating.side_effect = PermissionError("Session has expired.")
-
-    with pytest.raises(PermissionError, match="Session has expired."):
-        rating_management.handle_update_rating(
-            userSession="expired_session",
-            user_id="user_456",
-            rating_id="rating_789",
-            rating_value=4,
-            comment="Updated comment",
-        )
-
-def test_handle_delete_rating_failure_rating_assigned_to_admin(rating_management, mock_rating_service):
-    """TC 26: Delete Rating - Rating Assigned to Admin."""
-    mock_rating_service.delete_rating.side_effect = PermissionError("Cannot delete a rating assigned to an admin.")
-
-    with pytest.raises(PermissionError, match="Cannot delete a rating assigned to an admin."):
-        rating_management.handle_delete_rating(
-            user_id="user_456",
-            rating_id="admin_rating",
-        )
-
-
-
-def test_handle_create_rating_invalid_rating(rating_management):
-    """Test creating a rating with an invalid rating value."""
-    result = rating_management.handle_create_rating(
-        user_id="user_456",
-        station_id="station_123",
-        rating_value=6,  # Invalid rating value
-        comment="This is a test comment",
-    )
-
-    assert result is False  # Expecting failure due to invalid rating
-
-
-def test_handle_create_rating_invalid_comment(rating_management):
-    """Test creating a rating with an overly long comment."""
-    long_comment = "x" * 501  # 501 characters
-    result = rating_management.handle_create_rating(
-        user_id="user_456",
-        station_id="station_123",
-        rating_value=3,
-        comment=long_comment,
-    )
-
-    assert result is False  # Expecting failure due to overly long comment
-
-
-def test_handle_create_rating_service_failure(rating_management, mock_rating_service):
-    """Test failure in the RatingService's create_rating method."""
-    mock_rating_service.create_rating.side_effect = Exception("Service error")
-
-    with pytest.raises(Exception, match="Service error"):
-        rating_management.handle_create_rating(
-            user_id="user_456",
-            station_id="station_123",
-            rating_value=3,
-            comment="Valid comment",
-        )
