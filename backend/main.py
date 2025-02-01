@@ -13,14 +13,14 @@ from backend.db.mongo_client import user_collection
 
 app = FastAPI()
 
-# Initialize repositories
+
 user_repository = UserRepository(user_collection)
 station_repository = StationRepository()
 station_management = StationSearchManagement()
 rating_repository = RatingRepository()
 rating_management = RatingManagement()
 
-# Include Authentication Routes
+
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 
@@ -46,21 +46,21 @@ async def get_processed_data():
     """
 
     try:
-        # Load raw data
+        
         df_geodat_plz = pd.read_csv(DATA_PATHS['geodata_berlin_plz'], sep=';')
         df_lstat = pd.read_excel(DATA_PATHS['ladesaeulenregister'], header=10)
         df_residents = pd.read_csv(DATA_PATHS['plz_einwohner'])
 
-        # Data preprocessing
+        
         gdf_lstat = m1.preprocess_lstat(df_lstat, df_geodat_plz, pdict)
         gdf_lstat3 = m1.count_plz_occurrences(gdf_lstat)
         gdf_residents2 = m1.preprocess_resid(df_residents, df_geodat_plz, pdict)
 
-        # Standardize column names
+        
         gdf_lstat3.rename(columns={"PLZ": "Postleitzahl"}, inplace=True)
         gdf_residents2.rename(columns={"PLZ": "Postleitzahl"}, inplace=True)
 
-        # Serialize geometry to WKT for frontend compatibility
+        
         gdf_lstat3["geometry"] = gdf_lstat3["geometry"].apply(lambda geom: geom.wkt if geom else None)
         gdf_residents2["geometry"] = gdf_residents2["geometry"].apply(lambda geom: geom.wkt if geom else None)
 
@@ -87,7 +87,7 @@ async def search_stations(postal_code: str):
     """
     try:
         station_management = StationSearchManagement()
-        #service = StationSearchService(repository=station_repository)
+        
         result = await station_management.search_by_postal_code(postal_code) 
         return {
             "stations": [
@@ -96,7 +96,7 @@ async def search_stations(postal_code: str):
                     "postal_code": station.postal_code.value,
                     "availability_status": station.availability_status,
                     "location": station.location,
-                    "name": station.name,  # Include station name
+                    "name": station.name,  
                 }
                 for station in result.stations
             ],
@@ -112,7 +112,7 @@ async def search_stations(postal_code: str):
 async def rate_station(
     station_id: str,
     rating_data: dict = Body(...),
-    user_id: Optional[str] = None,  # Make user_id optional
+    user_id: Optional[str] = None,  
     current_user=Depends(user_repository.get_user_by_id)
 ):
     """
@@ -131,7 +131,7 @@ async def rate_station(
     if not current_user:
         raise HTTPException(status_code=401, detail="User not authenticated")
 
-    user_id = user_id or str(current_user["_id"])  # Use query or token-based user_id
+    user_id = user_id or str(current_user["_id"])  
     try:
         rating_management = RatingManagement()
         result = await rating_management.handle_create_rating(
@@ -169,7 +169,7 @@ async def rate_station(
     if not current_user:
         raise HTTPException(status_code=401, detail="User not authenticated")
 
-    user_id = user_id or str(current_user["_id"])  # Use query or token-based user_id
+    user_id = user_id or str(current_user["_id"])  
     try:
         station_management = StationSearchManagement()
         update_result = await station_management.update_availability_status(station_id)
@@ -205,15 +205,17 @@ async def update_rating(
         ):
     """
     Update a specific rating based on its ID.
-    
+
     Args:
         rating_id (str): The ID of the rating to update.
-    
+        rating_data (dict): The updated rating information.
+        user_id (Optional[str]): The ID of the user attempting to update the rating.
+
     Returns:
         dict: The updated rating record.
-    
+
     Raises:
-        HTTPException: If the rating does not exist or if validation fails.
+        HTTPException: If the rating does not exist, if validation fails, or if the user is unauthorized.
     """
     try:
         if user_id is not None:
@@ -254,12 +256,13 @@ async def delete_rating(
     
     Args:
         rating_id (str): The ID of the rating to delete.
-    
+        user_id (Optional[str]): The ID of the user attempting to delete the rating.
+
     Returns:
         dict: A success message.
-    
+
     Raises:
-        HTTPException: If the rating does not exist.
+        HTTPException: If the rating does not exist or the user is unauthorized.
     """
     try:
         if user_id is not None:

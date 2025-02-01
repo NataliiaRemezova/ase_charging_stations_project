@@ -79,7 +79,7 @@ class RatingManagement:
                 "rating_value": rating_value,
                 "comment": comment,
             }
-            # Use the service to create the rating
+            
             result = await self.ratingService.create_rating(rating_data)
             return result
         except ValueError as e:
@@ -89,7 +89,6 @@ class RatingManagement:
             print(f"Error creating rating: {e}")
             raise
 
-# Custom exceptions
 class InvalidRatingException(Exception):
     """Exception raised for invalid rating values."""
     pass

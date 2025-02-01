@@ -11,6 +11,7 @@ import asyncio
 
 @pytest.fixture(scope="session")
 def event_loop():
+    """Create an event loop for async tests."""
     loop = asyncio.get_event_loop()
     yield loop
     
@@ -19,7 +20,7 @@ async def test_find_by_postal_code_real():
     """
     Test finding charging stations using the actual StationRepository.
     """
-    # Arrange: Insert test data into MongoDB
+    
     postal_code = "10115"
     test_stations = [
         {
@@ -41,14 +42,14 @@ async def test_find_by_postal_code_real():
 
     repository = StationRepository()
 
-    # Act: Call the actual method
+    
     result = await repository.find_by_postal_code(PostalCode(postal_code))
 
-    # Assert: Verify correct output
+    
     assert len(result) == len(test_stations)
     assert all(station.postal_code.value == postal_code for station in result)
 
-    # Cleanup: Remove test data
+    
     await station_collection.delete_many({"postal_code": postal_code})
 
 @pytest.mark.asyncio
@@ -66,10 +67,10 @@ async def test_search_by_postal_code():
     
     service = StationSearchService(mock_repository)
 
-    # Act
+    
     result = await service.search_by_postal_code(postal_code)
 
-    # Assert
+    
     assert isinstance(result, SearchResult)
     assert isinstance(result.event, ChargingStationSearched)
     assert all(isinstance(station, ChargingStation) for station in result.stations)
@@ -84,14 +85,14 @@ async def test_search_by_postal_code_no_results():
     """
     postal_code = "10245"
     mock_repository = AsyncMock(spec=StationRepository)
-    mock_repository.find_by_postal_code.return_value = []  # No stations found
+    mock_repository.find_by_postal_code.return_value = []  
 
     service = StationSearchService(mock_repository)
 
-    # Act
+    
     result = await service.search_by_postal_code(postal_code)
 
-    # Assert
+    
     assert isinstance(result, SearchResult)
     assert result.event.stations_found == 0
     assert result.stations == []
@@ -125,10 +126,10 @@ async def test_find_by_object_id():
     mock_repository.find_by_object_id.return_value = mock_station
     service = StationSearchService(mock_repository)
 
-    # Act
+    
     result = await mock_repository.find_by_object_id(object_id)
 
-    # Assert
+    
     assert isinstance(result, ChargingStation)
     assert result.id == object_id
     assert result.postal_code.value == "10115"
@@ -141,7 +142,7 @@ async def test_find_by_object_id_not_found():
     Test retrieving a charging station by an ID that doesn't exist.
     """
     repository_mock = AsyncMock(spec=StationRepository)
-    repository_mock.find_by_object_id.return_value = None  # Simulating not found
+    repository_mock.find_by_object_id.return_value = None  
 
     service = StationSearchService(repository_mock)
 
@@ -156,7 +157,7 @@ async def test_update_availability_status():
     """
     station_id = "65a1c9d2e4b09d2d4e5f6a1b"
     mock_repository = AsyncMock(spec=StationRepository)
-    mock_repository.update_availability_status.return_value = None  # Simulating update
+    mock_repository.update_availability_status.return_value = None  
 
     service = StationSearchService(mock_repository)
 
@@ -166,18 +167,21 @@ async def test_update_availability_status():
 
 @pytest.mark.asyncio
 async def test_update_availability_status_exception():
+    """
+    Test updating the availability status of a charging station.
+    """
     repository_mock = AsyncMock(spec=StationRepository)
     repository_mock.update_availability_status.side_effect = Exception("MongoDB update error")
 
     service = StationSearchService(repository_mock)
 
-    # ✅ Now calling service instead, which should handle the exception
+    
     try:
         result = await service.repository.update_availability_status("12345")
     except Exception:
-        result = []  # Expected behavior when an error occurs
+        result = []  
 
-    assert result == []  # Ensure service returns an empty list on failure
+    assert result == []  
 
 @pytest.mark.asyncio
 async def test_repository_exception_handling():
@@ -192,23 +196,26 @@ async def test_repository_exception_handling():
     result = await service.search_by_postal_code("10115")
 
     assert isinstance(result, SearchResult)
-    assert result.stations == []  # Service handles the error and returns an empty list
+    assert result.stations == []  
     assert result.event.stations_found == 0
 
 @pytest.mark.asyncio
 async def test_find_by_object_id_exception():
+    """
+    Test that find_by_object_id handles repository exceptions gracefully.
+    """
     repository_mock = AsyncMock(spec=StationRepository)
     repository_mock.find_by_object_id.side_effect = Exception("DB failure")
 
     service = StationSearchService(repository_mock)
 
-    # ✅ Now calling service instead, which should handle the exception
+    
     try:
         result = await service.repository.find_by_object_id("fake_object_id")
     except Exception:
-        result = None  # Expected behavior when an error occurs
+        result = None  
 
-    assert result is None  # Ensure service returns None on failure
+    assert result is None  
 
 @pytest.mark.asyncio
 async def test_repository_exception_handling():
@@ -223,7 +230,7 @@ async def test_repository_exception_handling():
     result = await service.search_by_postal_code("10115")
 
     assert isinstance(result, SearchResult)
-    assert result.stations == []  # Service should return an empty list
+    assert result.stations == []  
     assert result.event.stations_found == 0
 
 @pytest.mark.asyncio
@@ -238,7 +245,7 @@ async def test_find_by_postal_code_exception():
     result = await repository.find_by_postal_code(PostalCode("10115"))
     
     assert isinstance(result, list)
-    assert len(result) == 0  # Should return an empty list on failure
+    assert len(result) == 0  
 
 @pytest.mark.asyncio
 async def test_find_by_object_id_real():

@@ -3,6 +3,26 @@ import requests
 from utils import API_BASE_URL
 
 def display_account():
+    """
+    Display the authenticated user's account information and provide options to:
+    - View and edit profile information.
+    - Change password.
+    - Log out.
+
+    The function first checks if the user is logged in by verifying if `user_info` 
+    exists in the Streamlit session state. If authenticated, it fetches the user's 
+    details from the backend API and allows modifications.
+
+    Features:
+    - Displays the logged-in user's username and email.
+    - Allows username updates (email cannot be changed).
+    - Enables password changes with validation.
+    - Provides a logout option.
+
+    Raises:
+        HTTPException (handled by API): If API requests fail due to authentication, 
+        authorization, or server errors.
+    """
     if 'user_info' in st.session_state and st.session_state.user_info:
         token = st.session_state.user_info.get("token")
         headers = {"Authorization": f"Bearer {token}"}
@@ -14,21 +34,19 @@ def display_account():
                 st.subheader(f"Welcome, {user_data['username']}!")
                 st.text(f"Email: {user_data['email']}")
                 
-                # Edit Profile
                 st.markdown("### Edit Profile")
                 new_username = st.text_input("Username", value=user_data['username'])
                 if st.button("Save Profile"):
                     response = requests.put(
                         f"{API_BASE_URL}/auth/users/{user_data['id']}",
                         headers=headers,
-                        json={"username": new_username}  # Email is NOT changed
+                        json={"username": new_username}
                     )
                     if response.status_code == 200:
                         st.success("Profile updated successfully!")
                     else:
                         st.error(f"Failed to update profile: {response.json().get('detail', 'Unknown error')}")
 
-                # Change Password
                 st.markdown("### Change Password")
                 old_password = st.text_input("Old Password", type="password")
                 new_password = st.text_input("New Password", type="password")
