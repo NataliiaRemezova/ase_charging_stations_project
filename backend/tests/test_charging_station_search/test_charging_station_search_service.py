@@ -1,8 +1,10 @@
+from datetime import datetime
 import pytest
 from unittest.mock import AsyncMock
-from backend.src.charging_station_search.charging_station_search_management import (
+from backend.src.charging_station_search.charging_station_search_service import (
     PostalCode, ChargingStation, SearchResult, ChargingStationSearched, InvalidPostalCodeException
 )
+from bson import ObjectId
 from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository
 from backend.db.mongo_client import station_collection
 import asyncio
@@ -224,3 +226,82 @@ async def test_repository_exception_handling():
     assert result.stations == []  # Service should return an empty list
     assert result.event.stations_found == 0
 
+@pytest.mark.asyncio
+async def test_find_by_postal_code_exception():
+    """
+    Test that find_by_postal_code handles exceptions gracefully.
+    """
+    repository = StationRepository()
+    repository.station_collection = AsyncMock()
+    repository.station_collection.find.side_effect = Exception("Database Error")
+    
+    result = await repository.find_by_postal_code(PostalCode("10115"))
+    
+    assert isinstance(result, list)
+    assert len(result) == 0  # Should return an empty list on failure
+
+@pytest.mark.asyncio
+async def test_find_by_object_id_real():
+    """
+    Test finding a charging station by ObjectId using the actual StationRepository.
+    """
+    object_id = ObjectId()
+    test_station = {
+        "_id": object_id,
+        "postal_code": "10115",
+        "availability_status": True,
+        "location": {"latitude": 52.5200, "longitude": 13.4050},
+        "name": "Test Station",
+    }
+    await station_collection.insert_one(test_station)
+    repository = StationRepository()
+    result = await repository.find_by_object_id(object_id)
+    assert result is not None
+    assert result.id == str(object_id)
+    await station_collection.delete_one({"_id": object_id})
+
+@pytest.mark.asyncio
+async def test_find_by_object_id_no_results():
+    """
+    Test find_by_object_id method when no results are found.
+    """
+    repository = StationRepository()
+    object_id = ObjectId()
+    result = await repository.find_by_object_id(object_id)
+    assert result is None
+
+@pytest.mark.asyncio
+async def test_find_by_object_id_exception():
+    """
+    Test that find_by_object_id handles exceptions gracefully.
+    """
+    repository = StationRepository()
+    repository.station_collection = AsyncMock()
+    repository.station_collection.find_one.side_effect = Exception("Database Error")
+    object_id = ObjectId()
+    result = await repository.find_by_object_id(object_id)
+    assert result is None
+
+@pytest.mark.asyncio
+async def test_update_availability_status_station_not_found():
+    """
+    Test updating availability status when station is not found.
+    """
+    station_id = str(ObjectId())
+    repository = StationRepository()
+    repository.find_by_object_id = AsyncMock(return_value=None)
+    
+    result = await repository.update_availability_status(station_id)
+    assert result == []
+
+@pytest.mark.asyncio
+async def test_update_availability_status_exception():
+    """
+    Test that update_availability_status handles exceptions gracefully.
+    """
+    station_id = str(ObjectId())
+    repository = StationRepository()
+    repository.find_by_object_id = AsyncMock(side_effect=Exception("Database Error"))
+    
+    result = await repository.update_availability_status(station_id)
+    assert result == []

@@ -1,81 +1,45 @@
 from dataclasses import dataclass 
 from datetime import datetime, time 
 from typing import List, Optional, ClassVar
-from backend.src.charging_station_rating.charging_station_rating_service import RatingService
 
-@dataclass (frozen=True)
-class PostalCode:
+from bson import ObjectId
+from backend.src.charging_station_search.charging_station_search_service import SearchResult, StationRepository, StationSearchService, PostalCode
+
+class StationSearchManagement:
     """
-    Represents a postal code, ensuring it is a valid Berlin postal code.
+    Handles the creation and management of charging station ratings.
+    """
+    def __init__(self):
+        self.stationService = StationSearchService(repository=StationRepository())
     
-    Attributes:
-        value (str): The postal code string.
+    async def search_by_postal_code(self, code: str) -> SearchResult:
+        """
+        Search for charging stations by postal code.
+
+        Args:
+            code (str): The postal code to search for charging stations.
+
+        Returns:
+            SearchResult: The search result containing stations and event metadata.
+        """
+        return await self.stationService.search_by_postal_code(code)
     
-    Raises:
-        InvalidPostalCodeException: If the postal code is not valid for Berlin.
-    """
-    value: str
-    def __post_init__(self):
-        if not self._is_valid_berlin_postal_code():
-            raise InvalidPostalCodeException(
-                f"{self. value} ist keine gültige Berliner PLZ"
-            )
+    async def find_by_object_id(self, object_id: ObjectId):
+        """
+        Query MongoDB for charging stations by ObjectId.
+
+        Args:
+            object_id (ObjectId): The objectId to search for charging stations.
+
+        Returns:
+            ChargingStation or None: The matching charging station, or None if an error occurs.
+        """
+        return await self.stationService.find_by_object_id(object_id)
+
+    async def update_availability_status(self, station_id: str):
+        """
+        Update the availability status of a charging station.
+        """
+        return await self.stationService.update_availability_status(station_id)
     
-    def _is_valid_berlin_postal_code(self) -> bool:
-        return (self.value.startswith(("10", "12", "13"))
-            and len(self.value) == 5)
-
-
-@dataclass
-class ChargingStation:
-    """
-    Represents a charging station as an aggregate root in the domain model.
     
-    Attributes:
-        id (str): The unique identifier for the charging station.
-        location (str): The physical location of the station.
-        postal_code (PostalCode): The postal code where the station is located.
-        availability_status (bool): Whether the station is currently available.
-        name (Optional[str]): The name of the station (default: "Unknown Name").
-        usage_statistics (float): The station's usage statistics (default: 0.0).
-    """
-    id: str
-    location: str
-    postal_code: PostalCode
-    availability_status: bool
-    name: Optional[str] = "Unknown Name"
-    usage_statistics: float = 0.0
-
-@dataclass(frozen=True)
-class ChargingStationSearched:
-    """
-    Domain event triggered when a charging station search occurs.
-    
-    Attributes:
-        postal_code (str): The postal code searched for.
-        stations_found (int): The number of stations found in the search.
-        timestamp (datetime): The timestamp of the search event.
-    """
-    postal_code: str 
-    stations_found: int 
-    timestamp: datetime
-
-@dataclass 
-class SearchResult:
-    """
-    Represents the result of a charging station search.
-    
-    Attributes:
-        stations (List[ChargingStation]): A list of charging stations found.
-        event (ChargingStationSearched): The event related to the search.
-    """
-    stations: List[ChargingStation] 
-    event: ChargingStationSearched
-
-
-# Exceptions
-class InvalidPostalCodeException (Exception):
-    """
-    Exception raised for invalid postal codes.
-    """
-    pass

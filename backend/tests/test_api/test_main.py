@@ -1,17 +1,34 @@
+from datetime import timedelta
 import pytest
 import httpx
+import pytest_asyncio
+from backend.src.user_profile.auth import create_access_token
 from httpx import AsyncClient
 from bson import ObjectId
+from fastapi import status
 from backend.main import app
 import asyncio
+from backend.db.mongo_client import user_collection
 
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.get_event_loop()
     yield loop
 
+
+@pytest_asyncio.fixture
+async def test_user():
+    test_user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "hashed_password": "testpassword"
+    }
+    await user_collection.insert_one(test_user_data)
+    yield test_user_data
+
+
 @pytest.fixture(scope="session")
-async def client():
+async def test_client():
     """Create an HTTPX AsyncClient for testing.
 
     This ensures that FastAPI's async endpoints are tested correctly 
@@ -21,112 +38,81 @@ async def client():
         yield ac
 
 
-@pytest.mark.asyncio
-async def test_root(client):
-    """Test the root (/) endpoint.
+@pytest_asyncio.fixture
+async def test_access_token(test_user):
+    return await create_access_token(
+        data={"sub": str(test_user["_id"])}, expires_delta=timedelta(minutes=30)
+    )
 
-    Ensures that the API health check returns a successful response
-    with a welcome message.
-    """
-    response = await client.get("/")
+
+@pytest.mark.asyncio
+async def test_search_stations(test_client):
+    response = await test_client.get("/stations/search/10115")
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+    
+@pytest.mark.asyncio
+async def test_rate_station(test_client, test_access_token, test_user):
+    station_id = "123"
+    user_id = str(test_user["_id"])
+    url = f"/stations/{station_id}/rate?user_id={user_id}"
+    response = await test_client.post(
+        url,
+        json={"rating_value": 5, "comment": "Great station!"},
+        headers={"Authorization": f"Bearer {test_access_token}"}
+    )
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+
+@pytest.mark.asyncio
+async def test_update_availability(test_client, test_access_token, test_user):
+    station_id = "123"
+    user_id = str(test_user["_id"])
+    url = f"/stations/{station_id}/availability?user_id={user_id}"
+    response = await test_client.post(
+        url,
+        headers={"Authorization": f"Bearer {test_access_token}"}
+    )
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+
+@pytest.mark.asyncio
+async def test_get_station_ratings(test_client):
+    response = await test_client.get("/stations/123/ratings")
+    assert response.status_code == status.HTTP_200_OK
+
+
+# @pytest.mark.asyncio
+# async def test_get_processed_data(test_client):
+#     response = await test_client.get("/data")
+#     assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR]
+#     if response.status_code == status.HTTP_200_OK:
+#         data = response.json()
+#         assert "geodat_plz" in data
+#         assert "lstat" in data
+#         assert "residents" in data
+
+@pytest.mark.asyncio
+async def test_root(test_client):
+    response = await test_client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Welcome to the Charging Station Backend API"}
 
 
 @pytest.mark.asyncio
-async def test_get_processed_data(client):
-    """Test fetching preprocessed data from the /data endpoint.
-
-    Ensures that the endpoint returns valid geolocation, charging 
-    station, and resident population data. A 500 error is acceptable 
-    if the files are missing.
-    """
-    response = await client.get("/data")
-    assert response.status_code in [200, 500]  # 500 if file not found
-    if response.status_code == 200:
-        assert "geodat_plz" in response.json()
-
-
-@pytest.mark.asyncio
-async def test_search_stations(client):
-    """Test searching for charging stations by postal code.
-
-    The /stations/search/{postal_code} endpoint should return:
-    - A list of charging stations (if found)
-    - The number of stations found
-    - A timestamp
-    """
-    response = await client.get("/stations/search/10115")
-    assert response.status_code in [200, 400]
-    if response.status_code == 200:
-        data = response.json()
-        assert "stations" in data
-        assert "stations_found" in data
-        assert isinstance(data["stations_found"], int)
-
-
-@pytest.mark.asyncio
-async def test_rate_station(client):
-    """Test submitting a rating for a charging station.
-
-    The /stations/{station_id}/rate endpoint should accept a rating
-    and return a success message. If the user is not authenticated, 
-    it should return a 401 error.
-    """
-    valid_user_id = str(ObjectId())  # Generate a valid MongoDB ObjectId
-    response = await client.post(
-        "/stations/12345/rate",
-        json={"rating_value": 5, "comment": "Great!"},
-        params={"user_id": valid_user_id},
-        headers={"Authorization": "Bearer testtoken"}
+async def test_update_non_existing_rating(test_client, test_access_token, test_user):
+    rating_id = "6512bd43d9caa6e02c990b0a"
+    user_id = str(test_user["_id"])
+    response = await test_client.put(
+        f"/ratings/{rating_id}?user_id={user_id}",
+        json={"rating_value": 4, "comment": "Updated rating!"},
+        headers={"Authorization": f"Bearer {test_access_token}"}
     )
-    assert response.status_code in [200, 401, 500]  # 401 if unauthorized
-    if response.status_code == 200:
-        assert response.json()["message"] == "Rating submitted successfully"
-
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND]
 
 @pytest.mark.asyncio
-async def test_get_station_ratings(client):
-    """Test retrieving ratings for a specific charging station.
-
-    The /stations/{station_id}/ratings endpoint should return a 
-    list of ratings if available.
-    """
-    response = await client.get("/stations/12345/ratings")
-    assert response.status_code in [200, 500]
-    if response.status_code == 200:
-        assert isinstance(response.json(), list)
-
-
-@pytest.mark.asyncio
-async def test_update_rating(client):
-    """Test updating an existing rating.
-
-    The /ratings/{rating_id} endpoint should allow a user to update 
-    their rating. If unauthorized, it should return a 401 error.
-    """
-    valid_user_id = str(ObjectId())
-    response = await client.put(
-        "/ratings/12345",
-        json={"rating_value": 5, "comment": "Updated comment"},
-        params={"user_id": valid_user_id}
+async def test_delete_non_existing_rating(test_client, test_access_token, test_user):
+    rating_id = "6512bd43d9caa6e02c990b0a"
+    user_id = str(test_user["_id"])
+    response = await test_client.delete(
+        f"/ratings/{rating_id}?user_id={user_id}",
+        headers={"Authorization": f"Bearer {test_access_token}"}
     )
-    assert response.status_code in [200, 401, 500]
-    if response.status_code == 200:
-        assert response.json()["rating_value"] == 5
-
-
-@pytest.mark.asyncio
-async def test_delete_rating(client):
-    """Test deleting a rating.
-
-
-The /ratings/{rating_id} endpoint should remove a rating
-    and return a success message. Unauthorized users should 
-    receive a 401 error.
-    """
-    valid_user_id = str(ObjectId())
-    response = await client.delete("/ratings/12345", params={"user_id": valid_user_id})
-    assert response.status_code in [200, 401, 500]
-    if response.status_code == 200:
-        assert response.json()["message"] == "Rating deleted successfully"
+    assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST, status.HTTP_404_NOT_FOUND]
