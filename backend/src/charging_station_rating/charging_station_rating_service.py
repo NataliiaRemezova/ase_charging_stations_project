@@ -203,8 +203,8 @@ class RatingService:
             raise ValueError("Rating not found or update failed.")
         
         # Return the updated rating data
-        updated_rating = await self.repository.get_ratings_by_station(rating_id)  # Adjust if necessary
-        return updated_rating[0] if updated_rating else {}
+        updated_rating = await self.repository.get_rating_by_id(rating_id)
+        return updated_rating if updated_rating else {}
 
     async def delete_rating(self, rating_id: str) -> bool:
         """

@@ -221,9 +221,7 @@ async def update_rating(
         if user_id is not None:
             rating_service = RatingService(rating_repository)
             rating_management = RatingManagement(rating_service)
-            print(rating_id)
             rating = await rating_management.handle_get_rating_by_id(rating_id)
-            print(rating)
             if rating is None:
                 raise HTTPException(status_code=404, detail="Rating not found")
             repo_user_id = rating["user_id"]

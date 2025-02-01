@@ -134,10 +134,11 @@ class RatingManagement:
         Raises:
             ValueError: If rating value is out of range or comment exceeds the character limit.
         """
-        # Validate input for update (if applicable)
-        rating_value[0]
-        print(rating_value)
-        if not (1 <= rating_value[0] <= 5):
+        # Validate input for update, get value from tuple
+        if isinstance(rating_value, tuple):
+            check_value = rating_value[0]
+        else: check_value = rating_value
+        if not (1 <= check_value <= 5):
             raise InvalidRatingException("Rating must be between 1 and 5.")
         if len(comment) > 500:
             raise InvalidCommentException("Comment is too long, can't be longer than 500 characters.")
@@ -147,7 +148,7 @@ class RatingManagement:
             updated_rating = await self.ratingService.update_rating(rating_id, rating_value, comment)
         except ValueError as e:
             raise
-        return updated_rating[0] if updated_rating else {}
+        return updated_rating
 
     async def handle_delete_rating(self, rating_id: str) -> bool:
             """
