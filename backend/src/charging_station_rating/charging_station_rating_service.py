@@ -44,6 +44,7 @@ class RatingRepository:
         ratings = await rating_collection.find({"station_id": station_id}).to_list(100)
         return [
             {
+                "id": str(rating['_id']),
                 "rating_value": rating["rating_value"],
                 "comment": rating["comment"],
                 "username": rating["username"],

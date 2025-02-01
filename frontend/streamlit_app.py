@@ -5,7 +5,7 @@ import streamlit as st
 from utils import DataLoader, SessionStateManager
 from home import display_home
 from heatmaps import display_heatmaps
-from postal_code import display_postal_code
+from ratings_availability import display_postal_code
 from details import display_details
 from account import display_account
 from registration import display_registration
