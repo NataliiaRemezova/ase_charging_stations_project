@@ -26,7 +26,7 @@ class Rating:
         if not 1 <= self.rating_value <= 5:
             raise InvalidRatingException("Rating must be between 1 and 5.")
         if len(self.comment) > 500:
-            raise InvalidCommentException("Comment is too long.")
+            raise InvalidCommentException("Comment is too long, can't be longer than 500 characters.")
 
 @dataclass(frozen=True)
 class RatingCreated:
@@ -50,8 +50,8 @@ class RatingManagement:
     """
     Handles the creation and management of charging station ratings.
     """
-    def __init__(self):
-        self.ratingService = RatingService(repository=RatingRepository())
+    def __init__(self, ratingService: RatingService):
+        self.ratingService = ratingService
 
     async def handle_create_rating(self, username, user_id, station_id, rating_value, comment):
         """
@@ -72,6 +72,8 @@ class RatingManagement:
             Exception: If an error occurs while saving the rating.
         """
         try:
+            #create a Rating for the value checks
+            rating = Rating(rating_value, comment, user_id, station_id)
             rating_data = {
                 "station_id": station_id,
                 "username": username,
@@ -82,6 +84,10 @@ class RatingManagement:
             # Use the service to create the rating
             result = await self.ratingService.create_rating(rating_data)
             return result
+        except InvalidRatingException as e:
+            raise
+        except InvalidCommentException as e:
+            raise
         except ValueError as e:
             print(f"Validation error: {e}")
             raise
