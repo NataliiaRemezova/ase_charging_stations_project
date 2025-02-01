@@ -1,4 +1,4 @@
-from datetime import datetime, time 
+from datetime import datetime
 from backend.db.mongo_client import rating_collection
 from bson.objectid import ObjectId
 
@@ -13,13 +13,14 @@ class RatingRepository:
         
         Args:
             station_id (str): The ID of the charging station being rated.
+            username (str): The username of the user providing the rating.
             user_id (str): The ID of the user providing the rating.
             rating_value (int): The rating value between 1 and 5.
             comment (str): The user's comment.
         
         Returns:
             str: The ID of the saved rating.
-        """
+        """ 
         rating_data = {
             "station_id": station_id,
             "user_id": user_id,
@@ -29,7 +30,7 @@ class RatingRepository:
             "timestamp": datetime.utcnow(),
         }
         result = await rating_collection.insert_one(rating_data)
-        return str(result.inserted_id)  # Return the ID of the saved rating
+        return str(result.inserted_id) 
 
     async def get_ratings_by_station(self, station_id: str):
         """
@@ -119,6 +120,12 @@ class RatingService:
     Service layer for managing rating-related operations.
     """
     def __init__(self, repository: RatingRepository):
+        """
+        Initialize the RatingService.
+
+        Args:
+            repository (RatingRepository): An instance of RatingRepository for database operations.
+        """
         self.repository = repository
 
     async def create_rating(self, rating_data: dict) -> dict:
@@ -134,23 +141,19 @@ class RatingService:
         Raises:
             ValueError: If rating value is out of range or comment exceeds the character limit.
         """
-        # Extract fields from rating_data
         rating_value = rating_data.get("rating_value")
         station_id = rating_data.get("station_id")
         user_id = rating_data.get("user_id")
         username = rating_data.get("username")
         comment = rating_data.get("comment")
 
-        # Validate input (if needed, you can add custom exceptions)
         if not (1 <= rating_value <= 5):
             raise ValueError("Rating value must be between 1 and 5.")
         if len(comment) > 500:
             raise ValueError("Comment must be 500 characters or less.")
 
-        # Save the rating using the repository
         rating_id = await self.repository.save_rating(station_id, username, user_id, rating_value, comment)
 
-        # Return the saved rating data
         return {
             "id": rating_id,
             "station_id": station_id,
@@ -176,19 +179,16 @@ class RatingService:
         Raises:
             ValueError: If rating value is out of range or comment exceeds the character limit.
         """
-        # Validate input for update (if applicable)
         if not (1 <= rating_value <= 5):
             raise ValueError("Rating value must be between 1 and 5.")
         if len(comment) > 500:
             raise ValueError("Comment must be 500 characters or less.")
 
-        # Perform the update in the repository
         success = await self.repository.update_rating(rating_id, rating_value, comment)
         if not success:
             raise ValueError("Rating not found or update failed.")
         
-        # Return the updated rating data
-        updated_rating = await self.repository.get_ratings_by_station(rating_id)  # Adjust if necessary
+        updated_rating = await self.repository.get_ratings_by_station(rating_id)
         return updated_rating[0] if updated_rating else {}
 
     async def delete_rating(self, rating_id: str) -> bool:

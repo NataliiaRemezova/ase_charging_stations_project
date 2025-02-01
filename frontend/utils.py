@@ -7,21 +7,36 @@ from typing import Tuple
 API_BASE_URL = "http://localhost:8000"
 
 class DataLoader:
-    """Handles data loading and preprocessing."""
+    """
+    Handles data loading and preprocessing for geospatial, charging station, and resident data.
+
+    Attributes:
+        geodata_path (str): Path to the geospatial dataset (Berlin postal codes).
+        ladesaeulen_path (str): Path to the electric charging station dataset.
+        residents_path (str): Path to the dataset containing Berlin residents by ZIP code.
+    """
     def __init__(self, geodata_path: str, ladesaeulen_path: str, residents_path: str):
         self.geodata_path = geodata_path
         self.ladesaeulen_path = ladesaeulen_path
         self.residents_path = residents_path
 
-    #@st.cache_data
+    
     def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """Loads and preprocesses data from local files."""
+        """
+        Loads and preprocesses data from local files.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: 
+                - DataFrame for geospatial data (postal codes).
+                - DataFrame for charging station data.
+                - DataFrame for resident data.
+        """
         try:
             df_geodat_plz = pd.read_csv(self.geodata_path, sep=';')
             df_lstat = pd.read_excel(self.ladesaeulen_path, header=10)
             df_residents = pd.read_csv(self.residents_path)
             
-            # Preprocess data
+            
             df_lstat['Breitengrad'] = pd.to_numeric(
                 df_lstat['Breitengrad'].astype(str).str.replace(',', '.'), errors='coerce'
             )

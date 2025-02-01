@@ -1,9 +1,5 @@
-from dataclasses import dataclass 
-from datetime import datetime, time 
-from typing import List, Optional, ClassVar
-
 from bson import ObjectId
-from backend.src.charging_station_search.charging_station_search_service import SearchResult, StationRepository, StationSearchService, PostalCode
+from backend.src.charging_station_search.charging_station_search_service import SearchResult, StationRepository, StationSearchService
 
 class StationSearchManagement:
     """
@@ -39,6 +35,9 @@ class StationSearchManagement:
     async def update_availability_status(self, station_id: str):
         """
         Update the availability status of a charging station.
+
+        Args:
+            station_id (str): The unique identifier of the charging station.
         """
         return await self.stationService.update_availability_status(station_id)
     
