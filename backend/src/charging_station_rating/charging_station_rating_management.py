@@ -1,6 +1,6 @@
 from dataclasses import dataclass 
 from datetime import datetime
-from backend.src.charging_station_rating.charging_station_rating_service import RatingService, RatingRepository
+from backend.src.charging_station_rating.charging_station_rating_service import RatingService
 
 @dataclass(frozen=True)
 class Rating:
@@ -84,7 +84,7 @@ class RatingManagement:
         rating = await self.ratingService.get_rating_by_id(rating_id)
         return rating
 
-    async def handle_create_rating(self, username, user_id, station_id, rating_value, comment) -> RatingCreated:
+    async def handle_create_rating(self, username, user_id, station_id, rating_value, comment) -> dict:
         """
         Handle creating a rating, performing validation, and saving it.
         

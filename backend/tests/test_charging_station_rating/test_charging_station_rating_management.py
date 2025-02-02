@@ -25,18 +25,15 @@ Version:
 import pytest
 from unittest.mock import AsyncMock, patch
 from datetime import datetime
-from charging_station_rating.charging_station_rating_management import (
-    Rating,
+from backend.src.charging_station_rating.charging_station_rating_management import (
     RatingManagement,
-    RatingCreated,
     InvalidRatingException,
     InvalidCommentException
 )
-from charging_station_rating.charging_station_rating_service import (
+from backend.src.charging_station_rating.charging_station_rating_service import (
     RatingService,
     RatingNotFoundException,
-    StationNotFoundException,
-    DoubleRatingException
+    StationNotFoundException
 )
 
 @pytest.fixture

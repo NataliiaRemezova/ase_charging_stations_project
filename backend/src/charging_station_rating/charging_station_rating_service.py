@@ -222,15 +222,11 @@ class RatingService:
         """
         return await self.repository.delete_rating(rating_id)
     
-    # Custom exceptions
+# Custom exceptions
 class RatingNotFoundException(Exception):
     """Exception raised if the rating to update/delete was not found."""
     pass
 
 class StationNotFoundException(Exception):
     """Exception raised if the station to rate was not found."""
-    pass
-
-class DoubleRatingException(Exception):
-    """Exception raised if a user tries to create a second rating for the same station."""
     pass
