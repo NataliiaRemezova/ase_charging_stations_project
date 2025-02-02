@@ -1,67 +1,172 @@
-"""
-test_charging_station_search_management.py
-
-Description:
-    This script contains unit tests for the methods of the charging station search management in 
-    src/charging_station_search/charging_station_search_management.py.
-
-Usage:
-    It is run with all the other tests in this repo by running 'pytest' in the terminal.
-
-Dependencies:
-    pytest
-
-Author:
-    Nina Immenroth
-
-Date:
-    2024-12-25
-
-Version:
-    Version 0.1
-"""
-
 import pytest
-from dataclasses import dataclass 
-from datetime import datetime 
-from typing import List, Optional
-from charging_station.charging_station_management import PostalCode
-from charging_station_search.charging_station_search_management import InvalidPostalCodeException
-from charging_station_search.charging_station_search_service import ChargingStationSearchService
+from datetime import datetime
+from unittest.mock import AsyncMock
+from backend.src.charging_station_search.charging_station_search_service import (
+    PostalCode, InvalidPostalCodeException, ChargingStation, ChargingStationSearched, SearchResult, StationSearchService
+)
+from backend.src.charging_station_search.charging_station_search_management import StationSearchManagement
 
-def test_berlin_postal_code_validation():
-# Arrange & Act & Assert
-    assert PostalCode.create("10115") # Valid 
-    with pytest.raises(InvalidPostalCodeException):
-        PostalCode.create("20115" ) # Hamburg 
-    with pytest.raises(InvalidPostalCodeException):
-        PostalCode.create("1011") # Zu kurz
 
-def test_find_stations_in_postal_code_area():
-    # Arrange
-    postal_code = PostalCode.create("10115" )
-    service = ChargingStationSearchService()
-    # Act
-    result = service.search_by_postal_code(postal_code)
-    # Assert
-    assert result is not None
-    assert all(station.is_in_area(postal_code)
-               for station in result.stations)
+pytestmark = pytest.mark.asyncio  
+
+
+async def test_postal_code_validation():
+    """
+    Test the validation of postal codes:
+    - Valid postal codes should be accepted.
+    - Invalid postal codes should raise an InvalidPostalCodeException.
+    """
+    assert PostalCode("10115")
+
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("20115")
+
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("1011")
+
+
+async def test_search_stations_by_valid_postal_code():
+    """
+    Test searching charging stations by a valid postal code.
+    - The service should return a SearchResult containing stations matching the postal code.
+    - The ChargingStationSearched event should reflect the correct number of found stations.
+    """
     
-def test_search_stations_by_valid_postal_code():
-    # Arrange
-    postal_code = "10115"
-    service = StationSearchService(MockStationRepository())
-    # Act
-    result = service.search_by_postal_code(postal_code)
-    # Assert
-    assert isinstance(result.event, ChargingStationSearched)
-    assert all(station.postal_code == postal_code
-        for station in result.stations)
+    postal_code = PostalCode("10115")
+    repository_mock = AsyncMock()
+    repository_mock.find_by_postal_code.return_value = [
+        ChargingStation(id="1", location="City Center", postal_code=postal_code, availability_status=True)
+    ]
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
 
-def test_search_with_invalid_postal_code():
-    # Arrange
-    service = StationSearchService(MockStationRepository())
-    # Act & Assert
+    
+    result = await service.search_by_postal_code("10115")
+
+    
+    assert isinstance(result, SearchResult)
+    assert isinstance(result.event, ChargingStationSearched)
+    assert result.event.postal_code == "10115"
+    assert result.event.stations_found == 1
+    assert len(result.stations) == 1
+    assert result.stations[0].postal_code == postal_code
+
+
+async def test_search_stations_with_invalid_postal_code():
+    """
+    Test searching charging stations with an invalid postal code.
+    - The service should raise an InvalidPostalCodeException.
+    """
+    
+    with pytest.raises(InvalidPostalCodeException) as exc_info:
+        station_search_service = StationSearchService(AsyncMock())
+        station_search_management = StationSearchManagement()
+        station_search_management.stationService = station_search_service
+        await station_search_management.search_by_postal_code("99999")  
+
+    assert "99999 ist keine gültige Berliner PLZ" in str(exc_info.value)
+
+
+async def test_empty_search_result():
+    """
+    Test searching for charging stations when no stations are found.
+    - The service should return a SearchResult with an empty station list.
+    - The event should indicate zero stations found.
+    """
+    
+    postal_code = PostalCode("10115")
+    repository_mock = AsyncMock()
+    repository_mock.find_by_postal_code.return_value = []  
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
+
+    
+    result = await service.search_by_postal_code("10115")
+
+    
+    assert isinstance(result, SearchResult)
+    assert result.event.postal_code == "10115"
+    assert result.event.stations_found == 0
+    assert result.stations == []
+
+
+async def test_search_stations_availability():
+    """
+    Test searching for charging stations and checking availability.
+    - The service should return all charging stations for a valid postal code.
+    - The result should contain stations with both available and unavailable statuses.
+    """
+    
+    postal_code = PostalCode("10115")
+    repository_mock = AsyncMock()
+    repository_mock.find_by_postal_code.return_value = [
+        ChargingStation(id="1", location="Station A", postal_code=postal_code, availability_status=True),
+        ChargingStation(id="2", location="Station B", postal_code=postal_code, availability_status=False),
+    ]
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
+
+    
+    result = await service.search_by_postal_code("10115")
+
+    
+    assert isinstance(result, SearchResult)
+    assert result.event.postal_code == "10115"
+    assert result.event.stations_found == 2
+    assert len(result.stations) == 2
+    assert any(station.availability_status for station in result.stations)  
+    assert any(not station.availability_status for station in result.stations)  
+
+
+async def test_search_invalid_postal_code_format():
+    """
+    Test searching charging stations with a postal code that has an invalid format.
+    - A non-numeric postal code should raise an InvalidPostalCodeException.
+    """
+    
     with pytest.raises(InvalidPostalCodeException):
-        service.search_by_postal_code("99999") # Ungültige PLZ
+        PostalCode("ABCDE")  
+
+
+async def test_search_stations_with_exact_timestamp():
+    """
+    Test that the search event timestamp is set correctly.
+    """
+    
+    postal_code = PostalCode("10115")
+    repository_mock = AsyncMock()
+    repository_mock.find_by_postal_code.return_value = [
+        ChargingStation(id="1", location="City Center", postal_code=postal_code, availability_status=True)
+    ]
+    station_service_mock = StationSearchService(repository=repository_mock)
+    service = StationSearchManagement()
+    service.stationService = station_service_mock
+
+    
+    result = await service.search_by_postal_code("10115")
+
+    
+    assert isinstance(result, SearchResult)
+    assert isinstance(result.event, ChargingStationSearched)
+    assert isinstance(result.event.timestamp, datetime)
+    assert abs((result.event.timestamp - datetime.now()).total_seconds()) < 5  
+
+async def test_postal_code_edge_cases():
+    """
+    Test edge cases for PostalCode validation.
+    - Postal codes with correct prefixes but incorrect length should fail.
+    """
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("10")  
+
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("120000")  
+
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("abcd1")  
+
+    with pytest.raises(InvalidPostalCodeException):
+        PostalCode("101150")  
