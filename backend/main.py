@@ -6,7 +6,7 @@ from backend.src.user_profile.user_profile_service import router as auth_router
 from backend.src.user_profile.user_profile_repositories import UserRepository
 import pandas as pd
 from backend.src.charging_station_search.charging_station_search_service import StationSearchService, StationRepository,InvalidPostalCodeException
-from backend.src.charging_station_rating.charging_station_rating_service import RatingRepository
+from backend.src.charging_station_rating.charging_station_rating_service import RatingService, RatingRepository
 from backend.src.charging_station_rating.charging_station_rating_management import Rating, RatingManagement
 from backend.src.charging_station_search.charging_station_search_management import StationSearchManagement
 from backend.db.mongo_client import user_collection
@@ -18,7 +18,6 @@ user_repository = UserRepository(user_collection)
 station_repository = StationRepository()
 station_management = StationSearchManagement()
 rating_repository = RatingRepository()
-rating_management = RatingManagement()
 
 
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -133,7 +132,8 @@ async def rate_station(
 
     user_id = user_id or str(current_user["_id"])  
     try:
-        rating_management = RatingManagement()
+        rating_service = RatingService(rating_repository)
+        rating_management = RatingManagement(rating_service)
         result = await rating_management.handle_create_rating(
             username=current_user["username"],
             user_id=user_id,
@@ -192,7 +192,9 @@ async def get_station_ratings(station_id: str):
         list: A list of rating records.
     """
     try:
-        ratings = await rating_repository.get_ratings_by_station(station_id)
+        rating_service = RatingService(rating_repository)
+        rating_management = RatingManagement(rating_service)
+        ratings = await rating_management.handle_get_ratings_by_station(station_id)
         return ratings
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -219,14 +221,17 @@ async def update_rating(
     """
     try:
         if user_id is not None:
-            rating = await rating_repository.get_rating_by_id(rating_id)
+            rating_service = RatingService(rating_repository)
+            rating_management = RatingManagement(rating_service)
+            rating = await rating_management.handle_get_rating_by_id(rating_id)
             if rating is None:
                 raise HTTPException(status_code=404, detail="Rating not found")
             repo_user_id = rating["user_id"]
             if repo_user_id == user_id:
                 rating_value=rating_data.get("rating_value"),
                 comment=rating_data.get("comment"),
-                updated_rating = await rating_repository.update_rating(
+
+                updated_rating = await rating_management.handle_update_rating(
                     rating_id=rating_id,
                     comment=comment,
                     rating_value=rating_value
@@ -266,12 +271,14 @@ async def delete_rating(
     """
     try:
         if user_id is not None:
-            rating = await rating_repository.get_rating_by_id(rating_id)
+            rating_service = RatingService(rating_repository)
+            rating_management = RatingManagement(rating_service)
+            rating = await rating_management.handle_get_rating_by_id(rating_id)
             if rating is None:
                 raise HTTPException(status_code=404, detail="Rating not found")
             repo_user_id = rating["user_id"]
             if repo_user_id == user_id:
-                success = await rating_repository.delete_rating(rating_id)
+                success = await rating_management.handle_delete_rating(rating_id)
             else:
                 raise HTTPException(status_code=401, detail="The action of this user is not allowed")
         else:

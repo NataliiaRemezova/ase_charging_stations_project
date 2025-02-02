@@ -7,7 +7,7 @@ class RatingRepository:
     """
     Repository for handling rating data storage and retrieval in MongoDB.
     """
-    async def save_rating(self, station_id: str, username: str, user_id: str, rating_value: int, comment: str):
+    async def save_rating(self, station_id: str, username: str, user_id: str, rating_value: int, comment: str) -> str:
         """
         Save a rating into MongoDB.
         
@@ -32,7 +32,7 @@ class RatingRepository:
         result = await rating_collection.insert_one(rating_data)
         return str(result.inserted_id) 
 
-    async def get_ratings_by_station(self, station_id: str):
+    async def get_ratings_by_station(self, station_id: str) -> list:
         """
         Retrieve ratings for a specific charging station from MongoDB.
         
@@ -56,7 +56,7 @@ class RatingRepository:
         ]
 
 
-    async def get_rating_by_id(self, rating_id: str):
+    async def get_rating_by_id(self, rating_id: str) -> dict:
         """
         Retrieve a specific rating by its ID from MongoDB.
         
@@ -77,7 +77,7 @@ class RatingRepository:
             }
         return None
         
-    async def update_rating(self, rating_id: str, rating_value: int = None, comment: str = None):
+    async def update_rating(self, rating_id: str, rating_value: int = None, comment: str = None) -> bool:
         """
         Update an existing rating in MongoDB.
         
@@ -101,7 +101,7 @@ class RatingRepository:
             return result.modified_count > 0
         return False
 
-    async def delete_rating(self, rating_id: str):
+    async def delete_rating(self, rating_id: str) -> bool:
         """
         Delete a rating from MongoDB.
         
@@ -128,6 +128,32 @@ class RatingService:
         """
         self.repository = repository
 
+    async def get_ratings_by_station(self, station_id: str) -> list:
+        """
+        Retrieve ratings for a specific charging station from MongoDB.
+        
+        Args:
+            station_id (str): The ID of the charging station.
+        
+        Returns:
+            list: A list of rating dictionaries.
+        """
+        ratings = await self.repository.get_ratings_by_station(station_id)
+        return ratings
+
+    async def get_rating_by_id(self, rating_id: str):
+        """
+        Retrieve a specific rating by its ID from MongoDB.
+        
+        Args:
+            rating_id (str): The ID of the rating to retrieve.
+        
+        Returns:
+            dict: The rating data, or None if not found.
+        """
+        rating = await self.repository.get_rating_by_id(rating_id)
+        return rating
+
     async def create_rating(self, rating_data: dict) -> dict:
         """
         Create a new rating and save it in the repository.
@@ -147,11 +173,7 @@ class RatingService:
         username = rating_data.get("username")
         comment = rating_data.get("comment")
 
-        if not (1 <= rating_value <= 5):
-            raise ValueError("Rating value must be between 1 and 5.")
-        if len(comment) > 500:
-            raise ValueError("Comment must be 500 characters or less.")
-
+        # Save the rating using the repository
         rating_id = await self.repository.save_rating(station_id, username, user_id, rating_value, comment)
 
         return {
@@ -179,17 +201,14 @@ class RatingService:
         Raises:
             ValueError: If rating value is out of range or comment exceeds the character limit.
         """
-        if not (1 <= rating_value <= 5):
-            raise ValueError("Rating value must be between 1 and 5.")
-        if len(comment) > 500:
-            raise ValueError("Comment must be 500 characters or less.")
 
         success = await self.repository.update_rating(rating_id, rating_value, comment)
         if not success:
             raise ValueError("Rating not found or update failed.")
         
-        updated_rating = await self.repository.get_ratings_by_station(rating_id)
-        return updated_rating[0] if updated_rating else {}
+        # Return the updated rating data
+        updated_rating = await self.repository.get_rating_by_id(rating_id)
+        return updated_rating if updated_rating else {}
 
     async def delete_rating(self, rating_id: str) -> bool:
         """
@@ -202,3 +221,16 @@ class RatingService:
             bool: True if the deletion was successful, False otherwise.
         """
         return await self.repository.delete_rating(rating_id)
+    
+    # Custom exceptions
+class RatingNotFoundException(Exception):
+    """Exception raised if the rating to update/delete was not found."""
+    pass
+
+class StationNotFoundException(Exception):
+    """Exception raised if the station to rate was not found."""
+    pass
+
+class DoubleRatingException(Exception):
+    """Exception raised if a user tries to create a second rating for the same station."""
+    pass
