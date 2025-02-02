@@ -7,21 +7,21 @@ from streamlit_star_rating import st_star_rating
 
 # Display Charging Station Map and Details
 def display_postal_code(df_lstat):
-    """
-    Streamlit UI for searching and displaying charging stations by postal code.
+    # """
+    # Streamlit UI for searching and displaying charging stations by postal code.
 
-    This function:
-    - Allows users to search for charging stations using a ZIP code.
-    - Displays an interactive map of charging stations.
-    - Allows users to click on a station marker to view details.
-    - Enables users to rate, update ratings, delete ratings, and change station availability.
+    # This function:
+    # - Allows users to search for charging stations using a ZIP code.
+    # - Displays an interactive map of charging stations.
+    # - Allows users to click on a station marker to view details.
+    # - Enables users to rate, update ratings, delete ratings, and change station availability.
 
-    Features:
-    - **Search Charging Stations**: Users enter a postal code to fetch stations.
-    - **Interactive Map**: Clickable markers allow users to select a station.
-    - **User Ratings & Comments**: Users can submit, update, and delete ratings.
-    - **Change Availability**: Users can toggle the station's availability.
-    """
+    # Features:
+    # - **Search Charging Stations**: Users enter a postal code to fetch stations.
+    # - **Interactive Map**: Clickable markers allow users to select a station.
+    # - **User Ratings & Comments**: Users can submit, update, and delete ratings.
+    # - **Change Availability**: Users can toggle the station's availability.
+    # """
     if "view" not in st.session_state:
         st.session_state.view = "search"
         
@@ -79,12 +79,12 @@ def display_postal_code(df_lstat):
     
     # Display Details and Rating
     elif st.session_state.get("view") == "details" and st.session_state.selected_station:
-        """
-        Displays detailed information about a selected charging station.
-        - Shows the station's location and availability.
-        - Allows users to submit, update, or delete ratings.
-        - Provides an option to change station availability.
-        """
+        # """
+        # Displays detailed information about a selected charging station.
+        # - Shows the station's location and availability.
+        # - Allows users to submit, update, or delete ratings.
+        # - Provides an option to change station availability.
+        # """
         station = st.session_state.selected_station
         st.subheader(f"🚗 {station['name']}")
         st.write(f"**Location:** {station['location']}")
@@ -165,12 +165,12 @@ def display_postal_code(df_lstat):
 
 
 def update_map(stations):
-    """
-    Updates the interactive map with charging station locations.
+    # """
+    # Updates the interactive map with charging station locations.
 
-    Args:
-        stations (list): A list of charging station dictionaries.
-    """
+    # Args:
+    #     stations (list): A list of charging station dictionaries.
+    # """
     if stations:
         try:
             # Parse the location string of the first station

@@ -5,22 +5,22 @@ import folium
 from streamlit_folium import st_folium
 
 def display_details(*args, **kwargs):
-    """
-    Displays detailed statistics and interactive filters for electric vehicle (EV) charging stations in Berlin.
+    # """
+    # Displays detailed statistics and interactive filters for electric vehicle (EV) charging stations in Berlin.
 
-    This function:
-    - Loads and processes charging station data if not already present in session state.
-    - Filters data for Berlin and allows users to select charging types and ZIP codes.
-    - Dynamically calculates statistics such as total stations, availability, and total charging points.
-    - Displays data using interactive charts and tables in Streamlit.
+    # This function:
+    # - Loads and processes charging station data if not already present in session state.
+    # - Filters data for Berlin and allows users to select charging types and ZIP codes.
+    # - Dynamically calculates statistics such as total stations, availability, and total charging points.
+    # - Displays data using interactive charts and tables in Streamlit.
 
-    Features:
-    - **Charging Station Status**: Bar chart visualization of available vs. out-of-service stations.
-    - **Total Charging Points**: Displays the total number of charging points.
-    - **Recent Achievements**: Highlights recent improvements in Berlin's charging network.
-    - **ZIP Code Filter**: Allows users to view stations in specific Berlin ZIP codes.
-    - **Detailed Data Table**: Option to display raw data for selected ZIP codes.
-    """
+    # Features:
+    # - **Charging Station Status**: Bar chart visualization of available vs. out-of-service stations.
+    # - **Total Charging Points**: Displays the total number of charging points.
+    # - **Recent Achievements**: Highlights recent improvements in Berlin's charging network.
+    # - **ZIP Code Filter**: Allows users to view stations in specific Berlin ZIP codes.
+    # - **Detailed Data Table**: Option to display raw data for selected ZIP codes.
+    # """
     st.subheader("Charging Station Details")
 
     
