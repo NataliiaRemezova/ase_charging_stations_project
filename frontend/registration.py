@@ -4,14 +4,38 @@ from utils import API_BASE_URL
 
 
 def display_registration():
+    # """
+    # Displays the registration and login page for ChargeHub Berlin.
+
+    # This function:
+    # - Provides a login interface where users can enter their email and password.
+    # - Provides a sign-up interface for new users to create an account.
+    # - Stores authenticated user information (token, username, email, user ID) in Streamlit session state.
+    # - Allows users to log out.
+    # - Fetches the user's profile after successful login.
+
+    # Features:
+    # - **Login Functionality**: Users can log in using their email and password.
+    # - **User Registration**: New users can create an account with a username, email, and password.
+    # - **Session Management**: Stores authentication token and user details in session state.
+    # - **Logout Option**: Users can log out and clear session data.
+    # """
     st.title("Welcome to ChargeHub Berlin 🌩")
 
-    # Initialize session state
     if "user_info" not in st.session_state:
         st.session_state.user_info = None
 
     def login(email, password):
-        """Handles user login."""
+        # """
+        # Handles user login by sending authentication credentials to the API.
+
+        # Args:
+        #     email (str): The user's email.
+        #     password (str): The user's password.
+
+        # Updates:
+        #     st.session_state.user_info: Stores user authentication details upon successful login.
+        # """
         try:
             response = requests.post(
                 f"{API_BASE_URL}/auth/token",
@@ -27,7 +51,6 @@ def display_registration():
                     }
                     st.success("Logged in successfully!")
 
-                    # Fetch user profile to confirm login
                     headers = {"Authorization": f"Bearer {token}"}
                     profile_response = requests.get(
                         f"{API_BASE_URL}/auth/users/me", headers=headers
@@ -53,7 +76,14 @@ def display_registration():
 
 
     def register(username, email, password):
-        """Handles user registration."""
+        # """
+        # Handles new user registration.
+
+        # Args:
+        #     username (str): The desired username.
+        #     email (str): The user's email.
+        #     password (str): The user's password.
+        # """
         try:
             response = requests.post(
                 f"{API_BASE_URL}/auth/register",
@@ -68,14 +98,20 @@ def display_registration():
 
     # Display UI
     if st.session_state.user_info:
+        # """
+        # If a user is logged in, display their profile and provide a logout button.
+        # """
         st.subheader(f"Welcome, {st.session_state.user_info['username']}!")
         st.text(f"Email: {st.session_state.user_info.get('email', 'Not available')}")
 
         if st.button("Log Out"):
             st.session_state.user_info = None
             st.success("Logged out successfully!")
-            st.experimental_rerun()
+            st.rerun()
     else:
+        # """
+        # If no user is logged in, display login and registration tabs.
+        # """
         tab1, tab2 = st.tabs(["Log In", "Sign Up"])
 
         with tab1:
