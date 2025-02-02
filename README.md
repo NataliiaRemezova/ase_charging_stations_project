@@ -16,8 +16,10 @@ ChargeHub Berlin is a platform designed to help users locate electric charging s
 1. Clone the Repository;
 2. Activate venv: 
 - python -m venv venv
+
 Windows:
 - venv\Scripts\activate
+
 Linux/MacOS:
 - source venv/bin/activate
 2. Install Dependencies:
@@ -32,6 +34,10 @@ Linux/MacOS:
     - streamlit run frontend/streamlit_app.py
 3. **Run Tests**
     - pytest tests/ 
+4. **Run Test Coverage**
+    - coverage run --source=backend/src -m pytest backend/tests/
+    - coverage report
+    - coverage html
 
 ## Features
 - **Interactive Heatmaps**: Visualize population density and charging station locations in Berlin.
