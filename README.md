@@ -1,131 +1,59 @@
-# Advanced Software Engineering
+# Electric Charging Stations and Residents in Berlin
+## Module: Advanced Software Engineering
+**University Master Project - Berliner Hochschule für Technik**
 
-## Heatmaps: Electric Charging Stations and Residents in Berlin
+## Authors - Group 19
+- Shaheen Tasneem, 107279
+- Immenroth Nina, 907261 
+- Remezova Nataliia, 106606 
+- Azimy Zabihullah, 945106
+- Pandey Navnish, 106141
 
-**Project done by group 19:**
-## Team members
-Azimy Zabihullah
-Immenroth Nina
-Shaheen Tasneem
-Remezova Nataliia
-   
-### Project Overview  
-This project aims to visualise the spatial distribution of residents and electric charging 
+## Project Overview  
+ChargeHub Berlin is a platform designed to help users locate electric charging stations in Berlin, visualize their distribution alongside population density, and manage interactions like ratings and reviews. Users can sign up, log in, search for charging stations by postal code, and check their availability in real time. The project integrates geospatial visualization with a robust backend for an optimal user experience.
 
-stations using heatmaps. It offers an interactive platform for analysing geospatial and 
+## Installation
+1. Clone the Repository;
+2. Activate venv: 
+- python -m venv venv
 
-demographic data, utilising Streamlit for an intuitive interface. By providing heatmaps 
+Windows:
+- venv\Scripts\activate
 
-that highlight population density and charging station distribution, this project enables 
+Linux/MacOS:
+- source venv/bin/activate
+2. Install Dependencies:
+- pip install -r requirements.txt
+3. Set Up MongoDB: Install MongoDB Community Edition and ensure it is running, more information can be found in the MongoDB documentation.
 
-users to identify infrastructure gaps and make data-driven decisions.
+### Usage
+1. **Run the Backend (FastAPI)**
+    - fastapi dev backend/main.py
+    - python backend/db/import_charging_stations.py
+2. **Run the Frontend**
+    - streamlit run frontend/streamlit_app.py
+3. **Run Tests**
+    - pytest tests/ 
+4. **Run Test Coverage**
+    - coverage run --source=backend/src -m pytest backend/tests/
+    - coverage report
+    - coverage html
 
+## Features
+- **Interactive Heatmaps**: Visualize population density and charging station locations in Berlin.
+- **Search by Postal Code**: Quickly find charging stations in specific areas with real-time availability indicators.
+- **User Ratings & Reviews**: Submit and update ratings (1-5 stars) with optional comments.
+- **User Authentication**: Secure sign-up, login, and profile management.
+- **API Integration**: RESTful endpoints for data retrieval and management.
 
-### Purpose
-The significant purpose of heatmaps: electric charging station project is to provide a user-friendly tool for visualising and analysing the spatial distribution of residents. 
+## Access
+  - Frontend Application: http://localhost:8501
+  - API Documentation: http://localhost:8000/docs
 
-1. By leveraging geospatial and demographic data, the project helps assess the adequacy of electric vehicle infrastructure.
-    
-2. Using Streamlit, the interface simplifies complex data analysis tasks, enabling insights into population density and charging station allocation. 
+## License
 
-### Scope
-1. Data Visualization 
-1. Heatmaps showcasing the density of residents and electric charging stations across the region.
-2. Residents: Heatmap showing population distribution by postal code
-3. Charging_Stations:  Heatmap displaying the density of charging stations and their nominal power
-2. Interactive Features
-1. Navigate through Berlin's map with pan and zoom functionality.
-2. Dynamic legends to show density scales.
-3. Heatmaps feature a colour gradient for better visual interpretation.
+This project is a closed university project and is not open for public use, modification, or distribution. Unauthorized use, reproduction, or distribution of any part of this project is strictly prohibited.
 
-## Setup and Prerequisites
-### Installation Requirements 
+## Contributions
 
-1. Install the required libraries listed in the “requirement.txt” file.
-    
-2. The following datasets are downloaded and placed in the datasets folder:  
-
-1. Ladesaeulenregister_SEP.xlsx
-    
-2. Ladesaeulenregister.csv
-    
-3. plz_einwohner.csv
-    
-
-### Technologies Used
-1. Programming Language: Python 3.12
-
-2. Libraries:
-    
-
-1. Data Processing: pandas, geopandas .
-    
-2. Visualisation: folium, streamlit, streamlit-folium, branca . 
-
-## Program Structure
-
-1. Data Input and Preprocessing
-
-1. Datasets Used:
-- geodata_berlin_plz.csv: Contains geospatial data for Berlin postal codes.
-    
-- Ladesaeulenregister_SEP.xlsx: Includes details about electric vehicle charging stations in Germany.
-    
-- plz_einwohner.csv: Contains data on resident populations by postal code in Berlin.
-    
-
-3. Preprocessing Steps:
-    
-
-- Residents Data:
-    
-
-1. Population data is filtered for Berlin postal codes.
-    
-2. Data is cleaned to remove invalid or missing entries.
-    
-3. Merged with geospatial data to create a GeoDataFrame.
-    
-
-- Charging Station Data:
-    
-
-4. Charging station details (postal code, coordinates, and nominal power) are filtered for Berlin.
-    
-5. Latitude and longitude values are standardised for accuracy.
-    
-6. Data is aggregated by postal code to count the number of charging stations.
-    
-
-2. Geospatial Processing
-    
-
-- Residents Data: Geospatial boundaries (postal code areas) are merged with population data to map the density of residents.
-    
-- Charging Stations Data: Charging station locations are matched with geospatial boundaries, and counts are aggregated by postal code.
-    
-- Geometry Validation: All datasets are checked for valid spatial geometries to ensure accurate rendering on maps.
-     
-
-3. Visualisation Generation
-    
-- Residents Heatmap:  
-    A choropleth map displaying population density across Berlin postal codes, using a gradient colour scheme from yellow (low density) to red (high density).
-    
-- Charging Stations Heatmap:  
-    A heatmap visualising the density of EV charging stations by location, with darker colours representing higher densities.
-    
-- Additional Layered Heatmaps:  
-
-- Charging stations visualised by their nominal power (KW) in separate layers.
-    
-- Dynamic legends and tooltips provide on-demand details for each postal code. 
-
-4. Streamlit Application
-- Layer Selection: Users can toggle between visualisations of residents, charging stations, and additional layers based on nominal power.
-    
-- Pan and Zoom: Allows for detailed exploration of Berlin's regions.
-    
-- Tooltips: Display postal code and relevant metrics (e.g., number of residents or charging stations) when hovered over.
-    
-- Dynamic Legends: Updated in real-time to reflect the selected layer's density scales.
+As this is a university project, external contributions are not accepted. If you are part of the project team and wish to make modifications, please follow the contribution guidelines.
