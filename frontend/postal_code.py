@@ -2,9 +2,7 @@ import streamlit as st
 import requests
 
 
-# ------------------------------
-# 🚀 Fetch Charging Stations by Postal Code
-# ------------------------------
+# Fetch Charging Stations by Postal Code
 def fetch_stations_by_postal_code(postal_code):
     """
     Fetch a list of charging stations by postal code from the backend API.
@@ -27,9 +25,7 @@ def fetch_stations_by_postal_code(postal_code):
         st.error(f"Error: {e}")
         return []
 
-# ------------------------------
-# 🚀 Submit Charging Station Rating
-# ------------------------------
+# Submit Charging Station Rating
 def submit_rating(station_id, rating_value, comment, token, user_id):
     """
     Submit a rating for a specific charging station.
@@ -66,9 +62,7 @@ def submit_rating(station_id, rating_value, comment, token, user_id):
     except requests.exceptions.RequestException as e:
         st.error(f"Error: {e}")
         
-# ------------------------------
-# 🚀 Change availability of the Charging Station
-# ------------------------------
+# Change availability of the Charging Station
 def change_availability_status(station_id, token, user_id):
     """
     Change the availability status of a charging station.
@@ -99,9 +93,7 @@ def change_availability_status(station_id, token, user_id):
         st.error(f"Error: {e}")
     
 
-# ------------------------------
-# 🚀 Fetch Ratings for a Charging Station
-# ------------------------------
+# Fetch Ratings for a Charging Station
 def fetch_station_ratings(station_id):
     """
     Fetch existing ratings for a specific charging station.
@@ -124,9 +116,7 @@ def fetch_station_ratings(station_id):
         return []
 
 
-# ------------------------------
-# 🚀 Delete Rating for a Charging Station
-# ------------------------------
+# Delete Rating for a Charging Station
 def delete_station_rating(rating_id):
     """
     Delete a rating for a specific charging station.
@@ -156,9 +146,7 @@ def delete_station_rating(rating_id):
         st.error(f"Error: {e}")
 
 
-# ------------------------------
-# 🚀 Update Rating for a Charging Station
-# ------------------------------
+# Update Rating for a Charging Station
 def update_station_rating(rating_id, rating_value, comment):
     """
     Update a rating for a specific charging station.

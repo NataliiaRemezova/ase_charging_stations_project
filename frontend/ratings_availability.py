@@ -5,9 +5,7 @@ from streamlit_folium import st_folium
 import time
 from streamlit_star_rating import st_star_rating
 
-# ------------------------------
-# 🚀 Display Charging Station Map and Details
-# ------------------------------
+# Display Charging Station Map and Details
 def display_postal_code(df_lstat):
     """
     Streamlit UI for searching and displaying charging stations by postal code.
@@ -30,7 +28,7 @@ def display_postal_code(df_lstat):
     if st.session_state.view == "search":
         st.subheader("🔍 Search for Charging Stations by Zip Code")
         
-        # 📍 Enter Postal Code
+        # Enter Postal Code
         postal_code = st.text_input("Enter zip code", st.session_state.get("postal_code", ""))
 
         if st.button("Search or Update"):
@@ -43,11 +41,11 @@ def display_postal_code(df_lstat):
             
             update_map(stations)
 
-        # 🗺️ Display Map
+        # Display Map
         if st.session_state.get("map"):
             output = st_folium(st.session_state.map, width=800, height=500)
 
-            # 📍 Marker Click Interaction
+            # Marker Click Interaction
             if output and output.get("last_object_clicked"):
                 lat_lng = output["last_object_clicked"]
 
@@ -70,7 +68,7 @@ def display_postal_code(df_lstat):
                 else:
                     st.warning("Could not identify the selected station.")
 
-        # 📊 Display Station Summary
+        # Display Station Summary
         if "filtered_stations" in st.session_state:
             stations = st.session_state.filtered_stations
             st.markdown(f"**Total Charging Stations Found:** {len(stations)}")
@@ -79,7 +77,7 @@ def display_postal_code(df_lstat):
             for station in stations:
                 st.write(f"- **{station['name']}** (Status: {'Available' if station['availability_status'] else 'Not Available'})")
     
-    # ⭐ Display Details and Rating
+    # Display Details and Rating
     elif st.session_state.get("view") == "details" and st.session_state.selected_station:
         """
         Displays detailed information about a selected charging station.
