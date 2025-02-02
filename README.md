@@ -1,141 +1,53 @@
-# Advanced Software Engineering
+# Heatmaps: Electric Charging Stations and Residents in Berlin
+## Module: Advanced Software Engineering
+**University Master Project - Berliner Hochschule für Technik**
 
-## Heatmaps: Electric Charging Stations and Residents in Berlin
+## Authors - Group 19
+- Shaheen Tasneem, 107279
+- Immenroth Nina, 907261 
+- Remezova Nataliia, 106606 
+- Azimy Zabihullah, 945106
+- Pandey Navnish, 106141
 
-**University Master Project by Group 19:**
-## Team members
-- Azimy Zabihullah
-- Immenroth Nina
-- Shaheen Tasneem
-- Remezova Nataliia
-- Pandey Navnish
-
-## Table of Contents
-
-- Project Overview
-- Features
-  - Part 1: Spatial Distribution Visualization
-  - Part 2: Charging Station Management
-- Installation & Setup
-  - Install Dependencies
-  - Set Up MongoDB
-  - How to Run the Project
-  - Testing
-- Project Structure
-- Usage
-- Architecture and Design
-  - Domain-Driven Design (DDD) Structure
-  - Test-Driven Development (TDD)
-  - Module Refactoring
-- Final Result
-
-   
 ## Project Overview  
-This master project, developed as part of an advanced software engineering course, ChargeHub Berlin is a comprehensive platform designed to help users locate electric charging stations in Berlin, visualize their distribution alongside population density, and manage user interactions such as ratings and reviews. Built with a modern tech stack, this project combines geospatial visualization with robust backend services for an optimal user experience.
+ChargeHub Berlin is a platform designed to help users locate electric charging stations in Berlin, visualize their distribution alongside population density, and manage interactions like ratings and reviews. Users can sign up, log in, search for charging stations by postal code, and check their availability in real time. The project integrates geospatial visualization with a robust backend for an optimal user experience.
 
-
-1. **Spatial Distribution Visualization (Heatmaps):**  
-   An interactive Streamlit application that displays heatmaps of Berlin’s population density and the locations of electric charging stations. This visualization helps identify areas with high demand and potential gaps in infrastructure.
-
-2. **User, Charging Station, and Search Management:**  
-   A FastAPI-based backend integrated with MongoDB that provides RESTful endpoints for:
-   - User registration, authentication, and profile management.
-   - CRUD operations for charging stations including a robust rating system.
-   - Searching for charging stations by postal code with interactive map results.
-
-The project leverages Domain-Driven Design (DDD) principles and Test-Driven Development (TDD) methodologies to ensure a modular, scalable, and maintainable codebase.
-
-
-## Features
-
-### Part 1: Spatial Distribution Visualization
-- **Heatmap Overlays**: Visualize population density and charging station locations across Berlin.
-- **Interactive Maps**: Explore data layers using Streamlit's interactive interface.
-
-### Part 2: Charging Station Management
-- **Search by Postal Code**: Find available stations in specific areas with real-time availability indicators.
-- **User Ratings & Reviews**: Rate stations (1-5 stars) and leave comments to share experiences.
-- **User Authentication**: Secure sign-up, login, and profile management.
-- **API Integration**: RESTful endpoints for data retrieval and management.
-
-
-## Installation & Setup
-### Install Dependencies
+## Installation
+1. Clone the Repository;
+2. Activate venv: 
+- python -m venv venv
+Windows:
+- venv\Scripts\activate
+Linux/MacOS:
+- source venv/bin/activate
+2. Install Dependencies:
 pip install -r requirements.txt
+3. Set Up MongoDB: Install MongoDB Community Edition and ensure it is running, more information can be found in the MongoDB documentation.
 
-### Set Up MangoDB
-Install MongoDB Community Edition
-
-### How to run Project
+### Usage
 1. **Run the Backend (FastAPI)**
     - fastapi dev backend/main.py
     - python backend/db/import_charging_stations.py
-
 2. **Run the Frontend**
     - streamlit run frontend/streamlit_app.py
-
-3. **Testing**
+3. **Run Tests**
     - pytest tests/ 
 
+## Features
+- **Interactive Heatmaps**: Visualize population density and charging station locations in Berlin.
+- **Search by Postal Code**: Quickly find charging stations in specific areas with real-time availability indicators.
+- **User Ratings & Reviews**: Submit and update ratings (1-5 stars) with optional comments.
+- **User Authentication**: Secure sign-up, login, and profile management.
+- **API Integration**: RESTful endpoints for data retrieval and management.
 
-## Project Structure
-```
-ase_charging_stations_project/
-├── backend/               # FastAPI application
-│   ├── db/               # MongoDB connection & data import
-│   ├── src/              # Core logic (users, stations, ratings)
-│   └── tests/            # Unit tests
-├── frontend/             # Streamlit interface
-│   ├── utils/            # Helper classes
-│   └── streamlit_app.py  # Main app entry
-├── datasets/             # GeoJSON and CSV data files
-└── requirements.txt      # Python dependencies
-```
+## Access
+  - Frontend Application: http://localhost:8501
+  - API Documentation: http://localhost:8000/docs
 
-## Usage
-1. Access the App
-    - Frontend: http://localhost:8501
-    - Backend API Docs: http://localhost:8000/docs
+## License
 
-2. Key Features
-    - Home Page: Overview of stations and city-wide metrics.
-    - Heatmaps: Toggle between population and station density layers.
-    - Postal Code Search: Enter a Berlin postal code (e.g., 10115) to view stations.
-    - Rate Stations: Log in to submit/update ratings (1-5 stars with optional comments).
-    - User Profile: Edit username, email, or password after registration.
+This project is a closed university project and is not open for public use, modification, or distribution. Unauthorized use, reproduction, or distribution of any part of this project is strictly prohibited.
 
-## Architecture and Design
+## Contributions
 
-### Domain-Driven Design (DDD) Structure
-The project is organized around core business domains:
-- **Entities:**  
-  - `ChargingStation`: Represents a charging station with attributes like location, ratings, and status.
-  - `UserProfile`: Represents a registered user.
-- **Value Objects:**  
-  - `PostalCode`: An immutable object handling postal code logic.
-- **Domain Events:**  
-  - Events such as `ChargingStationSearched` indicate state changes.
-- **Repositories and Services:**  
-  - Repositories (e.g., `UserRepository`, `StationRepository`) handle data access.
-  - Services (e.g., `RatingService`, `StationSearchService`) encapsulate business logic.
-
-### Test-Driven Development (TDD)
-We followed TDD practices to build a robust system:
-- **Test Plan:**  
-  Defined test cases with clear **Given-When-Then** structures covering:
-  - Creation, update, and deletion of ratings.
-  - Edge cases (e.g., invalid input, non-existent ratings).
-- **Implementation:**  
-  Tests are written using `pytest` and `pytest_asyncio` to handle asynchronous operations. Some validations (such as user authentication) are performed at the API level.
-
-### Module Refactoring and Project Structure
-Refactoring improved modularity and maintainability:
-- **Frontend (Streamlit):**  
-  Handles all user interactions and data visualizations.
-- **Backend (FastAPI):**  
-  Organized into domains for charging stations, ratings, and user profiles.
-- **Database Integration:**  
-  Utilizes MongoDB with asynchronous access through the Motor library.
-
-### Final Result
-The streamlit app for our analysis can be viewed [Here](#here).
+As this is a university project, external contributions are not accepted. If you are part of the project team and wish to make modifications, please follow the contribution guidelines.
