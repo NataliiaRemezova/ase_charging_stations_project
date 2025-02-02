@@ -1,4 +1,4 @@
-# Heatmaps: Electric Charging Stations and Residents in Berlin
+# Electric Charging Stations and Residents in Berlin
 ## Module: Advanced Software Engineering
 **University Master Project - Berliner Hochschule für Technik**
 
@@ -21,7 +21,7 @@ Windows:
 Linux/MacOS:
 - source venv/bin/activate
 2. Install Dependencies:
-pip install -r requirements.txt
+- pip install -r requirements.txt
 3. Set Up MongoDB: Install MongoDB Community Edition and ensure it is running, more information can be found in the MongoDB documentation.
 
 ### Usage
