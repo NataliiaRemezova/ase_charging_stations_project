@@ -25,5 +25,6 @@ python-dotenv
 st_star_rating
 passlib[bcrypt]
 python-jose[cryptography]
+pytest-asyncio
 # Install local packages which are recognizable by the __init__.py file
 -e .
