@@ -3,26 +3,26 @@ import requests
 from utils import API_BASE_URL
 
 def display_account():
-    """
-    Display the authenticated user's account information and provide options to:
-    - View and edit profile information.
-    - Change password.
-    - Log out.
+    # """
+    # Display the authenticated user's account information and provide options to:
+    # - View and edit profile information.
+    # - Change password.
+    # - Log out.
 
-    The function first checks if the user is logged in by verifying if `user_info` 
-    exists in the Streamlit session state. If authenticated, it fetches the user's 
-    details from the backend API and allows modifications.
+    # The function first checks if the user is logged in by verifying if `user_info` 
+    # exists in the Streamlit session state. If authenticated, it fetches the user's 
+    # details from the backend API and allows modifications.
 
-    Features:
-    - Displays the logged-in user's username and email.
-    - Allows username updates (email cannot be changed).
-    - Enables password changes with validation.
-    - Provides a logout option.
+    # Features:
+    # - Displays the logged-in user's username and email.
+    # - Allows username updates (email cannot be changed).
+    # - Enables password changes with validation.
+    # - Provides a logout option.
 
-    Raises:
-        HTTPException (handled by API): If API requests fail due to authentication, 
-        authorization, or server errors.
-    """
+    # Raises:
+    #     HTTPException (handled by API): If API requests fail due to authentication, 
+    #     authorization, or server errors.
+    # """
     if 'user_info' in st.session_state and st.session_state.user_info:
         token = st.session_state.user_info.get("token")
         headers = {"Authorization": f"Bearer {token}"}

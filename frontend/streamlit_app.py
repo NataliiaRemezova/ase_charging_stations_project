@@ -43,12 +43,12 @@ sys.path.append(datasets_path)
 
 # Load data using the DataLoader class if not already loaded in session state
 if not st.session_state["data_loaded"]:
-    """
-        Loads dataset files if they haven't been loaded already.
-        - Initializes DataLoader with dataset paths.
-        - Loads geospatial, station, and resident data.
-        - Saves the data in Streamlit's session state.
-        """
+    # """
+    #     Loads dataset files if they haven't been loaded already.
+    #     - Initializes DataLoader with dataset paths.
+    #     - Loads geospatial, station, and resident data.
+    #     - Saves the data in Streamlit's session state.
+    # """
     try:
         # Initialize DataLoader with absolute paths
         data_loader = DataLoader(
@@ -71,7 +71,7 @@ if not st.session_state["data_loaded"]:
     except Exception as e:
         st.error(f"❌ Error loading data: {e}")
 else:
-    st.write("ℹ️ Data already loaded in session state.")
+    print("Data already loaded in session state.")
 
 # Sidebar Navigation with unique keys
 navigation_options = ["Home", "Heatmaps", "Postal Code Search" ,"Details", "Registration"]
@@ -86,15 +86,15 @@ aview = st.sidebar.radio(
 
 # Navigation Logic
 try:
-    """
-    Handles navigation between different pages based on user selection.
-    """
+    # """
+    # Handles navigation between different pages based on user selection.
+    # """
     if aview == "Home":
         display_home()
     elif aview == "Heatmaps":
-        """
-        Displays heatmaps of charging stations and residents if datasets are available.
-        """
+        # """
+        # Displays heatmaps of charging stations and residents if datasets are available.
+        # """
         if "df_lstat" in st.session_state and "df_geodat_plz" in st.session_state and "df_residents" in st.session_state:
             display_heatmaps(
                 st.session_state.df_lstat, 
@@ -104,30 +104,30 @@ try:
         else:
             st.error("❌ Heatmap data is not available. Please check the dataset.")
     elif aview == "Postal Code Search":
-        """
-        Displays a search interface for finding charging stations by postal code.
-        """
+        # """
+        # Displays a search interface for finding charging stations by postal code.
+        # """
         if "df_lstat" in st.session_state:
             display_postal_code(st.session_state.df_lstat)
         else:
             st.error("❌ Postal code search data is not available.")
     elif aview == "Details":
-        """
-        Displays detailed statistics and filters for charging stations.
-        """
+        # """
+        # Displays detailed statistics and filters for charging stations.
+        # """
         if "df_lstat" in st.session_state:
             display_details(st.session_state.df_lstat)
         else:
             st.error("❌ Details data is not available.")
     elif aview == "My Account":
-        """
-        Displays the user's account information and settings.
-        """
+        # """
+        # Displays the user's account information and settings.
+        # """
         display_account()
     elif aview == "Registration":
-        """
-        Displays login and registration forms for user authentication.
-        """
+        # """
+        # Displays login and registration forms for user authentication.
+        # """
         display_registration()
     else:
         st.error("❌ Invalid navigation option selected.")

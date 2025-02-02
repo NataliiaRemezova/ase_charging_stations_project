@@ -2,19 +2,17 @@ import streamlit as st
 import requests
 
 
-# ------------------------------
-# 🚀 Fetch Charging Stations by Postal Code
-# ------------------------------
+# Fetch Charging Stations by Postal Code
 def fetch_stations_by_postal_code(postal_code):
-    """
-    Fetch a list of charging stations by postal code from the backend API.
+    # """
+    # Fetch a list of charging stations by postal code from the backend API.
 
-    Args:
-        postal_code (str): The postal code to search for charging stations.
+    # Args:
+    #     postal_code (str): The postal code to search for charging stations.
 
-    Returns:
-        list: A list of charging station dictionaries if the request is successful, otherwise an empty list.
-    """
+    # Returns:
+    #     list: A list of charging station dictionaries if the request is successful, otherwise an empty list.
+    # """
     try:
         response = requests.get(f"http://localhost:8000/stations/search/{postal_code}")
         if response.status_code == 200:
@@ -27,20 +25,18 @@ def fetch_stations_by_postal_code(postal_code):
         st.error(f"Error: {e}")
         return []
 
-# ------------------------------
-# 🚀 Submit Charging Station Rating
-# ------------------------------
+# Submit Charging Station Rating
 def submit_rating(station_id, rating_value, comment, token, user_id):
-    """
-    Submit a rating for a specific charging station.
+    # """
+    # Submit a rating for a specific charging station.
 
-    Args:
-        station_id (str): The ID of the charging station being rated.
-        rating_value (int): The rating value (1-5).
-        comment (str): A comment about the charging station.
-        token (str): The authentication token for the user.
-        user_id (str): The ID of the user submitting the rating.
-    """
+    # Args:
+    #     station_id (str): The ID of the charging station being rated.
+    #     rating_value (int): The rating value (1-5).
+    #     comment (str): A comment about the charging station.
+    #     token (str): The authentication token for the user.
+    #     user_id (str): The ID of the user submitting the rating.
+    # """
     if not token:
         st.error("You must be logged in to rate a station.")
         return
@@ -66,18 +62,16 @@ def submit_rating(station_id, rating_value, comment, token, user_id):
     except requests.exceptions.RequestException as e:
         st.error(f"Error: {e}")
         
-# ------------------------------
-# 🚀 Change availability of the Charging Station
-# ------------------------------
+# Change availability of the Charging Station
 def change_availability_status(station_id, token, user_id):
-    """
-    Change the availability status of a charging station.
+    # """
+    # Change the availability status of a charging station.
 
-    Args:
-        station_id (str): The ID of the charging station.
-        token (str): The authentication token for the user.
-        user_id (str): The ID of the user changing the status.
-    """
+    # Args:
+    #     station_id (str): The ID of the charging station.
+    #     token (str): The authentication token for the user.
+    #     user_id (str): The ID of the user changing the status.
+    # """
     if not token:
         st.error("You must be logged in to rate a station.")
         return
@@ -99,19 +93,17 @@ def change_availability_status(station_id, token, user_id):
         st.error(f"Error: {e}")
     
 
-# ------------------------------
-# 🚀 Fetch Ratings for a Charging Station
-# ------------------------------
+# Fetch Ratings for a Charging Station
 def fetch_station_ratings(station_id):
-    """
-    Fetch existing ratings for a specific charging station.
+    # """
+    # Fetch existing ratings for a specific charging station.
 
-    Args:
-        station_id (str): The ID of the charging station.
+    # Args:
+    #     station_id (str): The ID of the charging station.
 
-    Returns:
-        list: A list of rating dictionaries if the request is successful, otherwise an empty list.
-    """
+    # Returns:
+    #     list: A list of rating dictionaries if the request is successful, otherwise an empty list.
+    # """
     try:
         response = requests.get(f"http://localhost:8000/stations/{station_id}/ratings")
         if response.status_code == 200:
@@ -124,16 +116,14 @@ def fetch_station_ratings(station_id):
         return []
 
 
-# ------------------------------
-# 🚀 Delete Rating for a Charging Station
-# ------------------------------
+# Delete Rating for a Charging Station
 def delete_station_rating(rating_id):
-    """
-    Delete a rating for a specific charging station.
+    # """
+    # Delete a rating for a specific charging station.
 
-    Args:
-        rating_id (str): The ID of the rating to be deleted.
-    """
+    # Args:
+    #     rating_id (str): The ID of the rating to be deleted.
+    # """
     try:
         token = st.session_state.user_info.get("token")
         if not token:
@@ -156,18 +146,16 @@ def delete_station_rating(rating_id):
         st.error(f"Error: {e}")
 
 
-# ------------------------------
-# 🚀 Update Rating for a Charging Station
-# ------------------------------
+# Update Rating for a Charging Station
 def update_station_rating(rating_id, rating_value, comment):
-    """
-    Update a rating for a specific charging station.
+    # """
+    # Update a rating for a specific charging station.
 
-    Args:
-        rating_id (str): The ID of the rating to be updated.
-        rating_value (int): The new rating value (1-5).
-        comment (str): The updated comment.
-    """
+    # Args:
+    #     rating_id (str): The ID of the rating to be updated.
+    #     rating_value (int): The new rating value (1-5).
+    #     comment (str): The updated comment.
+    # """
     try:
         token = st.session_state.user_info.get("token")
         if not token:
