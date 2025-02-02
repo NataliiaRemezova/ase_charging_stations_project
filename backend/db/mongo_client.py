@@ -1,5 +1,4 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from bson.objectid import ObjectId
 import os
 
 # Environment Variable for MongoDB URL

@@ -112,7 +112,7 @@ class RatingManagement:
                 "rating_value": rating_value,
                 "comment": comment,
             }
-            # Use the service to create the rating
+            
             result = await self.ratingService.create_rating(rating_data)
             return result
         except InvalidRatingException as e:

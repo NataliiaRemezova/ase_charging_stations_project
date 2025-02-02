@@ -1,5 +1,5 @@
 from dataclasses import dataclass 
-from datetime import datetime, time
+from datetime import datetime
 from typing import List, Optional 
 from bson.objectid import ObjectId
 from backend.db.mongo_client import station_collection
@@ -87,14 +87,14 @@ class StationRepository:
             List[ChargingStation]: A list of matching charging stations.
         """
         try:
-            results = await station_collection.find({"postal_code": postal_code.value}).to_list(100)  # Limit results for performance
+            results = await station_collection.find({"postal_code": postal_code.value}).to_list(100)
             return [
                 ChargingStation(
                     id=str(station["_id"]),
                     postal_code=PostalCode(station["postal_code"]),
                     availability_status=station["availability_status"],
                     location=f"{station['location']['latitude']}, {station['location']['longitude']}",
-                    name=station.get("name", "Unknown Name"),  # Include name field
+                    name=station.get("name", "Unknown Name"),
                 )
                 for station in results
             ]
@@ -151,6 +151,12 @@ class StationSearchService:
     Service for searching charging stations by postal code.
     """
     def __init__(self, repository: StationRepository):
+        """
+        Initialize the service with a repository instance.
+
+        Args:
+            repository (StationRepository): The repository handling data access.
+        """
         self.repository = repository
         
     async def find_by_object_id(self, object_id: ObjectId):
@@ -168,6 +174,9 @@ class StationSearchService:
     async def update_availability_status(self, station_id: str):
         """
         Update the availability status of a charging station.
+        
+        Args:
+            station_id (str): The ID of the charging station.
         """
         return await self.repository.update_availability_status(station_id)
 
@@ -186,20 +195,19 @@ class StationSearchService:
         try:
             stations = await self.repository.find_by_postal_code(postal_code)
             if stations is None:
-                stations = []  # Fix: Prevent len(None) error
+                stations = [] 
         except Exception as e:
             print(f"Error searching stations by postal code {code}: {e}")
-            stations = []  # Fix: Ensure stations is always a list
+            stations = []
 
         event = ChargingStationSearched(
             postal_code=postal_code.value,
-            stations_found=len(stations),  # Now len(stations) won't fail
+            stations_found=len(stations),
             timestamp=datetime.now()
         )
         return SearchResult(stations=stations, event=event)
 
 
-# Exceptions
 class InvalidPostalCodeException (Exception):
     """
     Exception raised for invalid postal codes.
